@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Landmark,
+  Tag,
   ArrowLeftRight,
   CreditCard,
   Target,
@@ -32,6 +33,12 @@ const navItems: NavItem[] = [
     titulo: "Contas Bancárias",
     href: "/contas-bancarias",
     icone: Landmark,
+    ativo: true,
+  },
+  {
+    titulo: "Categorias",
+    href: "/categorias",
+    icone: Tag,
     ativo: true,
   },
   {
