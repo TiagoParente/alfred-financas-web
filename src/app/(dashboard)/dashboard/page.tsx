@@ -47,6 +47,7 @@ export default function DashboardPage() {
           instituicao_financeira: formData.instituicao_financeira || null,
           tipo_conta: formData.tipo_conta,
           incluir_no_saldo_geral: formData.incluir_no_saldo_geral,
+          incluir_nas_reservas: formData.incluir_nas_reservas,
           cor_hex: formData.cor_hex || null,
         },
       });
@@ -58,6 +59,7 @@ export default function DashboardPage() {
         tipo_conta: formData.tipo_conta,
         saldo_inicial: Number(formData.saldo_inicial) || 0,
         incluir_no_saldo_geral: formData.incluir_no_saldo_geral,
+        incluir_nas_reservas: formData.incluir_nas_reservas,
         cor_hex: formData.cor_hex || null,
       });
     }

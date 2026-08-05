@@ -1,17 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useFamilias } from "@/features/familias/hooks/useFamilias";
 import { useContasBancarias } from "@/features/contas_bancarias/hooks/useContasBancarias";
-import { ContaBancaria } from "@/types/contas";
+import { ContaBancaria, TipoContaBancaria } from "@/types/contas";
 import { ResumoSaldosCards } from "@/features/contas_bancarias/components/ResumoSaldosCards";
 import { ContaBancariaCard } from "@/features/contas_bancarias/components/ContaBancariaCard";
+import { ContasBancariasListView } from "@/features/contas_bancarias/components/ContasBancariasListView";
 import { ContaBancariaModal } from "@/features/contas_bancarias/components/ContaBancariaModal";
 import { DeletarContaModal } from "@/features/contas_bancarias/components/DeletarContaModal";
 import { ContasBancariasSkeleton } from "@/features/contas_bancarias/components/ContasBancariasSkeleton";
 import { ContasBancariasEmptyState } from "@/features/contas_bancarias/components/ContasBancariasEmptyState";
-import { Plus, RefreshCw, AlertCircle } from "lucide-react";
+import {
+  Plus,
+  RefreshCw,
+  AlertCircle,
+  Search,
+  LayoutList,
+  LayoutGrid,
+  Landmark,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+
+type TabTipoConta = "todas" | TipoContaBancaria;
+type ModoExibicao = "lista" | "grid";
 
 export default function ContasBancariasPage() {
   const { familiaAtivaId } = useFamilias();
@@ -29,11 +44,50 @@ export default function ContasBancariasPage() {
     isDeletando,
   } = useContasBancarias(familiaAtivaId);
 
+  const [tabAtiva, setTabAtiva] = useState<TabTipoConta>("todas");
+  const [modoExibicao, setModoExibicao] = useState<ModoExibicao>("lista");
+  const [searchTerm, setSearchTerm] = useState("");
+
   const [modalFormAberta, setModalFormAberta] = useState(false);
   const [contaEmEdicao, setContaEmEdicao] = useState<ContaBancaria | null>(null);
 
   const [modalDeletarAberta, setModalDeletarAberta] = useState(false);
   const [contaParaDeletar, setContaParaDeletar] = useState<ContaBancaria | null>(null);
+
+  // Filtragem por tipo e por busca de texto
+  const contasFiltradas = useMemo(() => {
+    let result = contas;
+
+    // Filtro por tipo de conta
+    if (tabAtiva !== "todas") {
+      result = result.filter((c) => c.tipo_conta === tabAtiva);
+    }
+
+    // Filtro por termo de busca
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      result = result.filter(
+        (c) =>
+          c.nome.toLowerCase().includes(term) ||
+          c.instituicao_financeira?.toLowerCase().includes(term) ||
+          c.banco?.nome.toLowerCase().includes(term) ||
+          c.tipo_conta_descricao.toLowerCase().includes(term)
+      );
+    }
+
+    return result;
+  }, [contas, tabAtiva, searchTerm]);
+
+  // Contadores por tipo de conta para as abas
+  const contadores = useMemo(() => {
+    return {
+      todas: contas.length,
+      corrente: contas.filter((c) => c.tipo_conta === TipoContaBancaria.CORRENTE).length,
+      poupanca: contas.filter((c) => c.tipo_conta === TipoContaBancaria.POUPANCA).length,
+      investimento: contas.filter((c) => c.tipo_conta === TipoContaBancaria.INVESTIMENTO).length,
+      outros: contas.filter((c) => c.tipo_conta === TipoContaBancaria.OUTROS).length,
+    };
+  }, [contas]);
 
   const handleNovaConta = () => {
     setContaEmEdicao(null);
@@ -62,6 +116,7 @@ export default function ContasBancariasPage() {
           instituicao_financeira: formData.instituicao_financeira || null,
           tipo_conta: formData.tipo_conta,
           incluir_no_saldo_geral: formData.incluir_no_saldo_geral,
+          incluir_nas_reservas: formData.incluir_nas_reservas,
           cor_hex: formData.cor_hex || null,
         },
       });
@@ -73,6 +128,7 @@ export default function ContasBancariasPage() {
         tipo_conta: formData.tipo_conta,
         saldo_inicial: Number(formData.saldo_inicial) || 0,
         incluir_no_saldo_geral: formData.incluir_no_saldo_geral,
+        incluir_nas_reservas: formData.incluir_nas_reservas,
         cor_hex: formData.cor_hex || null,
       });
     }
@@ -102,7 +158,7 @@ export default function ContasBancariasPage() {
         <Button
           onClick={() => refetch()}
           variant="outline"
-          className="mt-4 gap-2 rounded-[10px]"
+          className="mt-4 gap-2 rounded-[10px] cursor-pointer"
         >
           <RefreshCw className="h-4 w-4" />
           <span>Tentar Novamente</span>
@@ -112,11 +168,12 @@ export default function ContasBancariasPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header da Página */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
+            <Landmark className="h-6 w-6 text-[#1F4E79]" />
             Contas Bancárias
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -127,7 +184,7 @@ export default function ContasBancariasPage() {
         {contas.length > 0 && (
           <Button
             onClick={handleNovaConta}
-            className="rounded-[10px] bg-[#1F4E79] hover:bg-[#1F4E79]/90 text-white font-medium gap-2 shadow-sm"
+            className="rounded-[10px] bg-[#1F4E79] hover:bg-[#1F4E79]/90 text-white font-medium gap-2 shadow-2xs cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>Nova Conta</span>
@@ -138,27 +195,176 @@ export default function ContasBancariasPage() {
       {/* Cards de Resumo */}
       <ResumoSaldosCards resumo={resumo} />
 
-      {/* Lista de Contas ou Empty State */}
+      {/* Conteúdo Principal */}
       {contas.length === 0 ? (
         <ContasBancariasEmptyState onNovaConta={handleNovaConta} />
       ) : (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-foreground">
-              Todas as Contas ({contas.length})
-            </h2>
+        <div className="space-y-5">
+          {/* Barra de Filtros por Tipo, Busca e Alternador de Modo de Exibição */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-b border-border/40 pb-3.5">
+            {/* Abas por Tipo de Conta */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+              <button
+                type="button"
+                onClick={() => setTabAtiva("todas")}
+                className={cn(
+                  "px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors shrink-0 cursor-pointer",
+                  tabAtiva === "todas"
+                    ? "bg-[#1F4E79] text-white shadow-2xs"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                Todas ({contadores.todas})
+              </button>
+              <button
+                type="button"
+                onClick={() => setTabAtiva(TipoContaBancaria.CORRENTE)}
+                className={cn(
+                  "px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors shrink-0 cursor-pointer",
+                  tabAtiva === TipoContaBancaria.CORRENTE
+                    ? "bg-[#1F4E79] text-white shadow-2xs"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                Corrente ({contadores.corrente})
+              </button>
+              <button
+                type="button"
+                onClick={() => setTabAtiva(TipoContaBancaria.POUPANCA)}
+                className={cn(
+                  "px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors shrink-0 cursor-pointer",
+                  tabAtiva === TipoContaBancaria.POUPANCA
+                    ? "bg-[#1F4E79] text-white shadow-2xs"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                Poupança ({contadores.poupanca})
+              </button>
+              <button
+                type="button"
+                onClick={() => setTabAtiva(TipoContaBancaria.INVESTIMENTO)}
+                className={cn(
+                  "px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors shrink-0 cursor-pointer",
+                  tabAtiva === TipoContaBancaria.INVESTIMENTO
+                    ? "bg-[#1F4E79] text-white shadow-2xs"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                Investimento ({contadores.investimento})
+              </button>
+              {contadores.outros > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setTabAtiva(TipoContaBancaria.OUTROS)}
+                  className={cn(
+                    "px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors shrink-0 cursor-pointer",
+                    tabAtiva === TipoContaBancaria.OUTROS
+                      ? "bg-[#1F4E79] text-white shadow-2xs"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  )}
+                >
+                  Outros ({contadores.outros})
+                </button>
+              )}
+            </div>
+
+            {/* Busca em Tempo Real + Alternador de Visualização */}
+            <div className="flex items-center gap-2.5">
+              {/* Campo de Busca */}
+              <div className="relative flex-1 md:w-64">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar conta ou banco..."
+                  className="h-8 pl-8 pr-7 text-xs rounded-lg bg-card"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Botões do Alternador (Lista vs Grid) */}
+              <div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setModoExibicao("lista")}
+                  className={cn(
+                    "flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
+                    modoExibicao === "lista"
+                      ? "bg-background text-foreground shadow-2xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title="Visão em Lista Compacta"
+                >
+                  <LayoutList className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Lista</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModoExibicao("grid")}
+                  className={cn(
+                    "flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
+                    modoExibicao === "grid"
+                      ? "bg-background text-foreground shadow-2xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title="Visão em Cards Grid"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Cards</span>
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {contas.map((conta) => (
-              <ContaBancariaCard
-                key={conta.id}
-                conta={conta}
-                onEditar={handleEditar}
-                onDeletar={handleDeletar}
-              />
-            ))}
-          </div>
+          {/* Exibição das Contas */}
+          {contasFiltradas.length === 0 ? (
+            <div className="text-center py-12 rounded-2xl border border-dashed border-border/60 bg-accent/10 space-y-2">
+              <p className="text-sm font-medium text-foreground">
+                Nenhuma conta encontrada
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {searchTerm
+                  ? `Nenhum resultado para "${searchTerm}"`
+                  : "Nenhuma conta cadastrada neste filtro."}
+              </p>
+              {searchTerm && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchTerm("")}
+                  className="mt-2 text-xs rounded-lg cursor-pointer"
+                >
+                  Limpar busca
+                </Button>
+              )}
+            </div>
+          ) : modoExibicao === "lista" ? (
+            <ContasBancariasListView
+              contas={contasFiltradas}
+              onEditar={handleEditar}
+              onDeletar={handleDeletar}
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-3">
+              {contasFiltradas.map((conta) => (
+                <ContaBancariaCard
+                  key={conta.id}
+                  conta={conta}
+                  onEditar={handleEditar}
+                  onDeletar={handleDeletar}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 

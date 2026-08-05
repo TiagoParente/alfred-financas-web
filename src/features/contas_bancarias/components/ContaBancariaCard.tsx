@@ -2,7 +2,7 @@
 
 import { ContaBancaria } from "@/types/contas";
 import { formatarMoeda } from "@/utils/formatters";
-import { Landmark, MoreVertical, Edit2, Trash2, ShieldAlert } from "lucide-react";
+import { Landmark, MoreVertical, Edit2, Trash2, ShieldAlert, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -25,26 +25,26 @@ export function ContaBancariaCard({
   const corBg = conta.cor_hex || "#1F4E79";
 
   return (
-    <div className="group relative flex flex-col justify-between rounded-[16px] border border-border/50 bg-card p-5 shadow-sm hover:shadow-md transition-all">
+    <div className="group relative flex flex-col justify-between rounded-[16px] border border-border/50 bg-card p-4 shadow-2xs hover:shadow-xs transition-all space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white font-bold text-lg shadow-sm"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white font-bold text-base shadow-2xs"
             style={{ backgroundColor: corBg }}
           >
             {conta.banco?.logo_url ? (
-              // eslint-disable-next-next/no-img-element
+              // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={conta.banco.logo_url}
                 alt={conta.banco.nome}
-                className="h-7 w-7 object-contain"
+                className="h-6 w-6 object-contain"
               />
             ) : (
-              <Landmark className="h-5 w-5" />
+              <Landmark className="h-4.5 w-4.5" />
             )}
           </div>
           <div>
-            <h3 className="font-semibold text-foreground text-base leading-tight">
+            <h3 className="font-semibold text-foreground text-sm leading-tight">
               {conta.nome}
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
@@ -55,8 +55,8 @@ export function ContaBancariaCard({
         </div>
 
         <DropdownMenu>
-          <DropdownMenuTrigger className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center hover:bg-accent">
-            <MoreVertical className="h-4 w-4" />
+          <DropdownMenuTrigger className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center hover:bg-accent cursor-pointer transition-colors">
+            <MoreVertical className="h-3.5 w-3.5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40 rounded-xl">
             <DropdownMenuItem
@@ -96,9 +96,13 @@ export function ContaBancariaCard({
             <Badge variant="outline" className="text-[11px] font-normal border-[#1F4E79]/30 text-[#1F4E79] bg-[#1F4E79]/5">
               Saldo Geral
             </Badge>
-          ) : (
+          ) : conta.incluir_nas_reservas ? (
             <Badge variant="outline" className="text-[11px] font-normal border-amber-500/30 text-amber-600 bg-amber-50 dark:bg-amber-950/20">
               <ShieldAlert className="mr-1 h-3 w-3" /> Reserva
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-[11px] font-normal border-slate-400/40 text-slate-500 bg-slate-50 dark:bg-slate-900/30">
+              <Eye className="mr-1 h-3 w-3" /> Visualização
             </Badge>
           )}
         </div>

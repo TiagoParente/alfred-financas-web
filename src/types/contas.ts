@@ -14,6 +14,12 @@ export const TipoContaBancariaDescricao: Record<TipoContaBancaria, string> = {
   [TipoContaBancaria.OUTROS]: "Outros",
 };
 
+export enum DestinoSaldo {
+  DISPONIVEL = "disponivel",
+  RESERVA = "reserva",
+  NENHUM = "nenhum",
+}
+
 export interface ContaBancaria {
   id: number;
   familia_id: number;
@@ -26,6 +32,7 @@ export interface ContaBancaria {
   saldo_inicial: number;
   saldo_atual: number;
   incluir_no_saldo_geral: boolean;
+  incluir_nas_reservas: boolean;
   cor_hex: string | null;
   ativo: boolean;
   created_at?: string;
@@ -51,6 +58,7 @@ export interface CriarContaBancariaPayload {
   tipo_conta: TipoContaBancaria;
   saldo_inicial: number;
   incluir_no_saldo_geral?: boolean;
+  incluir_nas_reservas?: boolean;
   cor_hex?: string | null;
 }
 
@@ -60,6 +68,7 @@ export interface AtualizarContaBancariaPayload {
   instituicao_financeira?: string | null;
   tipo_conta?: TipoContaBancaria;
   incluir_no_saldo_geral?: boolean;
+  incluir_nas_reservas?: boolean;
   cor_hex?: string | null;
   ativo?: boolean;
 }

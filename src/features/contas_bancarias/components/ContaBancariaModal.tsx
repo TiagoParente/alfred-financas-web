@@ -22,7 +22,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -30,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 const contaBancariaSchema = z.object({
   nome: z.string().min(2, "O nome deve ter pelo menos 2 caracteres"),
@@ -38,6 +38,7 @@ const contaBancariaSchema = z.object({
   tipo_conta: z.nativeEnum(TipoContaBancaria),
   saldo_inicial: z.coerce.number(),
   incluir_no_saldo_geral: z.boolean(),
+  incluir_nas_reservas: z.boolean(),
   cor_hex: z.string().optional(),
 });
 
@@ -88,6 +89,7 @@ export function ContaBancariaModal({
       tipo_conta: TipoContaBancaria.CORRENTE,
       saldo_inicial: 0,
       incluir_no_saldo_geral: true,
+      incluir_nas_reservas: true,
       cor_hex: "#1F4E79",
     },
   });
@@ -96,6 +98,26 @@ export function ContaBancariaModal({
   const corHexAtual = watch("cor_hex");
   const bancoIdAtual = watch("banco_id");
   const incluirNoSaldoGeral = watch("incluir_no_saldo_geral");
+  const incluirNasReservas = watch("incluir_nas_reservas");
+
+  const destinoAtual: "disponivel" | "reserva" | "nenhum" = incluirNoSaldoGeral
+    ? "disponivel"
+    : incluirNasReservas
+    ? "reserva"
+    : "nenhum";
+
+  const handleDestinoChange = (destino: "disponivel" | "reserva" | "nenhum") => {
+    if (destino === "disponivel") {
+      setValue("incluir_no_saldo_geral", true);
+      setValue("incluir_nas_reservas", false);
+    } else if (destino === "reserva") {
+      setValue("incluir_no_saldo_geral", false);
+      setValue("incluir_nas_reservas", true);
+    } else {
+      setValue("incluir_no_saldo_geral", false);
+      setValue("incluir_nas_reservas", false);
+    }
+  };
 
   // Preenche dados ao editar
   useEffect(() => {
@@ -107,6 +129,7 @@ export function ContaBancariaModal({
         tipo_conta: contaEmEdicao.tipo_conta,
         saldo_inicial: contaEmEdicao.saldo_inicial,
         incluir_no_saldo_geral: contaEmEdicao.incluir_no_saldo_geral,
+        incluir_nas_reservas: contaEmEdicao.incluir_nas_reservas ?? true,
         cor_hex: contaEmEdicao.cor_hex || "#1F4E79",
       });
     } else {
@@ -117,18 +140,21 @@ export function ContaBancariaModal({
         tipo_conta: TipoContaBancaria.CORRENTE,
         saldo_inicial: 0,
         incluir_no_saldo_geral: true,
+        incluir_nas_reservas: true,
         cor_hex: "#1F4E79",
       });
     }
   }, [contaEmEdicao, open, reset]);
 
-  // Se o tipo for alterado para Investimento, desmarca incluir no saldo geral por padrão
+  // Se o tipo for alterado para Investimento, direciona para Reserva por padrão
   const handleTipoContaChange = (val: TipoContaBancaria) => {
     setValue("tipo_conta", val);
     if (val === TipoContaBancaria.INVESTIMENTO) {
       setValue("incluir_no_saldo_geral", false);
+      setValue("incluir_nas_reservas", true);
     } else if (!contaEmEdicao) {
       setValue("incluir_no_saldo_geral", true);
+      setValue("incluir_nas_reservas", false);
     }
   };
 
@@ -296,18 +322,109 @@ export function ContaBancariaModal({
             </div>
           </div>
 
-          {/* Switch Incluir no Saldo Geral */}
-          <div className="flex items-center justify-between rounded-xl border border-border/60 p-3.5 mt-2 bg-accent/20">
-            <div className="space-y-0.5 pr-2">
-              <Label className="text-sm font-semibold">Incluir no Saldo Geral</Label>
-              <p className="text-xs text-muted-foreground">
-                Se desativado, o saldo desta conta será contabilizado separadamente como Reserva/Investimento.
-              </p>
+          {/* Seletor de Participação no Saldo */}
+          <div className="space-y-2 pt-1">
+            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Participação no Saldo da Família *
+            </Label>
+
+            <div className="grid grid-cols-1 gap-2">
+              {/* Opção 1: Saldo Disponível */}
+              <div
+                onClick={() => handleDestinoChange("disponivel")}
+                className={cn(
+                  "cursor-pointer rounded-xl border p-3 transition-all flex items-start gap-3",
+                  destinoAtual === "disponivel"
+                    ? "border-[#1F4E79] bg-[#1F4E79]/10 dark:bg-[#1F4E79]/20 shadow-2xs"
+                    : "border-border/60 hover:bg-accent/40"
+                )}
+              >
+                <div
+                  className={cn(
+                    "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-all",
+                    destinoAtual === "disponivel"
+                      ? "border-[#1F4E79] bg-[#1F4E79] text-white"
+                      : "border-muted-foreground/40"
+                  )}
+                >
+                  {destinoAtual === "disponivel" && (
+                    <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">
+                    Saldo Disponível (Geral)
+                  </p>
+                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                    Soma ao saldo disponível para despesas do dia a dia e no patrimônio total.
+                  </p>
+                </div>
+              </div>
+
+              {/* Opção 2: Reserva / Investimento */}
+              <div
+                onClick={() => handleDestinoChange("reserva")}
+                className={cn(
+                  "cursor-pointer rounded-xl border p-3 transition-all flex items-start gap-3",
+                  destinoAtual === "reserva"
+                    ? "border-amber-500 bg-amber-500/10 dark:bg-amber-500/20 shadow-2xs"
+                    : "border-border/60 hover:bg-accent/40"
+                )}
+              >
+                <div
+                  className={cn(
+                    "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-all",
+                    destinoAtual === "reserva"
+                      ? "border-amber-500 bg-amber-500 text-white"
+                      : "border-muted-foreground/40"
+                  )}
+                >
+                  {destinoAtual === "reserva" && (
+                    <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">
+                    Reserva / Investimento
+                  </p>
+                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                    Isolada do saldo disponível, mas soma no total de reservas e patrimônio.
+                  </p>
+                </div>
+              </div>
+
+              {/* Opção 3: Apenas Visualização */}
+              <div
+                onClick={() => handleDestinoChange("nenhum")}
+                className={cn(
+                  "cursor-pointer rounded-xl border p-3 transition-all flex items-start gap-3",
+                  destinoAtual === "nenhum"
+                    ? "border-slate-500 bg-slate-500/10 dark:bg-slate-500/20 shadow-2xs"
+                    : "border-border/60 hover:bg-accent/40"
+                )}
+              >
+                <div
+                  className={cn(
+                    "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-all",
+                    destinoAtual === "nenhum"
+                      ? "border-slate-500 bg-slate-500 text-white"
+                      : "border-muted-foreground/40"
+                  )}
+                >
+                  {destinoAtual === "nenhum" && (
+                    <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">
+                    Apenas Visualização (Sem impacto nos saldos)
+                  </p>
+                  <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
+                    Conta para acompanhamento. Não soma no saldo disponível, nem nas reservas, nem no patrimônio.
+                  </p>
+                </div>
+              </div>
             </div>
-            <Switch
-              checked={incluirNoSaldoGeral}
-              onCheckedChange={(checked) => setValue("incluir_no_saldo_geral", checked)}
-            />
           </div>
 
           <DialogFooter className="pt-3">
