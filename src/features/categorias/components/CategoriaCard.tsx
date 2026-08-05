@@ -67,27 +67,27 @@ export function CategoriaCard({
   };
 
   return (
-    <div className="flex flex-col justify-between rounded-[16px] border border-border/40 bg-card p-5 shadow-sm hover:shadow-md transition-shadow space-y-4">
+    <div className="flex flex-col justify-between rounded-[16px] border border-border/40 bg-card p-4 sm:p-5 shadow-2xs hover:shadow-xs transition-shadow space-y-3">
       {/* Header do Card */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div
-            className="flex h-11 w-11 items-center justify-center rounded-2xl text-white shadow-sm"
+            className="flex h-10 w-10 items-center justify-center rounded-xl text-white shadow-2xs shrink-0"
             style={{ backgroundColor: corHex }}
           >
-            <CategoriaIcon iconName={categoria.icone} className="h-5.5 w-5.5" />
+            <CategoriaIcon iconName={categoria.icone} className="h-5 w-5" />
           </div>
           <div>
-            <h4 className="font-semibold text-foreground text-base leading-snug">
+            <h4 className="font-semibold text-foreground text-sm leading-snug">
               {categoria.nome}
             </h4>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-1.5 mt-0.5">
               <Badge
                 variant="outline"
                 className={
                   isReceita
-                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium text-[11px]"
-                    : "border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400 font-medium text-[11px]"
+                    ? "border-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium text-[10px] px-1.5 py-0 h-4"
+                    : "border-0 bg-rose-500/10 text-rose-600 dark:text-rose-400 font-medium text-[10px] px-1.5 py-0 h-4"
                 }
               >
                 {categoria.tipo_label}
@@ -96,14 +96,14 @@ export function CategoriaCard({
               {categoria.e_do_sistema ? (
                 <Badge
                   variant="secondary"
-                  className="text-[10px] bg-accent/60 text-muted-foreground gap-1"
+                  className="text-[9px] px-1.5 py-0 h-4 bg-accent/60 text-muted-foreground gap-0.5"
                 >
-                  <Lock className="h-3 w-3" /> Sistema
+                  <Lock className="h-2.5 w-2.5" /> Sistema
                 </Badge>
               ) : (
                 <Badge
                   variant="outline"
-                  className="text-[10px] border-border/60 text-muted-foreground"
+                  className="text-[9px] px-1.5 py-0 h-4 border-border/60 text-muted-foreground"
                 >
                   Personalizada
                 </Badge>
@@ -115,8 +115,8 @@ export function CategoriaCard({
         {/* Menu de Ações (Apenas se não for do sistema) */}
         {!categoria.e_do_sistema && (
           <DropdownMenu>
-            <DropdownMenuTrigger className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center hover:bg-accent cursor-pointer transition-colors">
-              <MoreVertical className="h-4 w-4" />
+            <DropdownMenuTrigger className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center hover:bg-accent cursor-pointer transition-colors">
+              <MoreVertical className="h-3.5 w-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="rounded-xl">
               <DropdownMenuItem

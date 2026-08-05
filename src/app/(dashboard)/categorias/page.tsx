@@ -5,20 +5,39 @@ import { useFamilias } from "@/features/familias/hooks/useFamilias";
 import { useCategorias } from "@/features/categorias/hooks/useCategorias";
 import { Categoria, Subcategoria, TipoCategoria } from "@/types/categorias";
 import { CategoriaCard } from "@/features/categorias/components/CategoriaCard";
+import { CategoriasListView } from "@/features/categorias/components/CategoriasListView";
 import { CategoriaModal, CategoriaFormData } from "@/features/categorias/components/CategoriaModal";
 import { DeletarCategoriaModal } from "@/features/categorias/components/DeletarCategoriaModal";
 import { DeletarSubcategoriaModal } from "@/features/categorias/components/DeletarSubcategoriaModal";
 import { CategoriasSkeleton } from "@/features/categorias/components/CategoriasSkeleton";
 import { CategoriasEmptyState } from "@/features/categorias/components/CategoriasEmptyState";
-import { Plus, RefreshCw, AlertCircle, Download, Tag } from "lucide-react";
+import {
+  Plus,
+  RefreshCw,
+  AlertCircle,
+  Download,
+  Tag,
+  Search,
+  LayoutList,
+  LayoutGrid,
+  TrendingDown,
+  TrendingUp,
+  Layers,
+  FolderTree,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 type TabFiltro = "todas" | "receitas" | "despesas";
+type ModoExibicao = "lista" | "grid";
 
 export default function CategoriasPage() {
   const { familiaAtivaId } = useFamilias();
   const [tabAtiva, setTabAtiva] = useState<TabFiltro>("todas");
+  const [modoExibicao, setModoExibicao] = useState<ModoExibicao>("lista");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const {
     categorias,
@@ -48,15 +67,42 @@ export default function CategoriasPage() {
   const [modalDeletarSubAberta, setModalDeletarSubAberta] = useState(false);
   const [subcategoriaParaDeletar, setSubcategoriaParaDeletar] = useState<Subcategoria | null>(null);
 
+  // Estatísticas Rápidas
+  const stats = useMemo(() => {
+    const totalCategorias = categorias.length;
+    const despesas = categorias.filter((c) => c.tipo === TipoCategoria.DESPESA).length;
+    const receitas = categorias.filter((c) => c.tipo === TipoCategoria.RECEITA).length;
+    const subcategorias = categorias.reduce(
+      (acc, c) => acc + (c.subcategorias?.length || 0),
+      0
+    );
+
+    return { totalCategorias, despesas, receitas, subcategorias };
+  }, [categorias]);
+
+  // Filtragem combinada por tipo e busca por texto
   const categoriasFiltradas = useMemo(() => {
+    let result = categorias;
+
+    // Filtro por Aba
     if (tabAtiva === "receitas") {
-      return categorias.filter((c) => c.tipo === TipoCategoria.RECEITA);
+      result = result.filter((c) => c.tipo === TipoCategoria.RECEITA);
+    } else if (tabAtiva === "despesas") {
+      result = result.filter((c) => c.tipo === TipoCategoria.DESPESA);
     }
-    if (tabAtiva === "despesas") {
-      return categorias.filter((c) => c.tipo === TipoCategoria.DESPESA);
+
+    // Filtro por Busca de Texto (Nome de categoria ou subcategoria)
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      result = result.filter(
+        (c) =>
+          c.nome.toLowerCase().includes(term) ||
+          c.subcategorias?.some((sub) => sub.nome.toLowerCase().includes(term))
+      );
     }
-    return categorias;
-  }, [categorias, tabAtiva]);
+
+    return result;
+  }, [categorias, tabAtiva, searchTerm]);
 
   const handleNovaCategoria = () => {
     setCategoriaEmEdicao(null);
@@ -141,7 +187,7 @@ export default function CategoriasPage() {
         <Button
           onClick={() => refetch()}
           variant="outline"
-          className="mt-4 gap-2 rounded-[10px]"
+          className="mt-4 gap-2 rounded-[10px] cursor-pointer"
         >
           <RefreshCw className="h-4 w-4" />
           <span>Tentar Novamente</span>
@@ -151,7 +197,7 @@ export default function CategoriasPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header da Página */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -169,7 +215,7 @@ export default function CategoriasPage() {
             onClick={handleImportarPadroes}
             disabled={isImportandoPadroes}
             variant="outline"
-            className="rounded-[10px] border-border/60 hover:bg-accent text-foreground font-medium gap-2 shadow-sm"
+            className="rounded-[10px] border-border/60 hover:bg-accent text-foreground font-medium gap-2 shadow-2xs cursor-pointer"
           >
             <Download className="h-4 w-4 text-[#1F4E79]" />
             <span>{isImportandoPadroes ? "Importando..." : "Importar Padrões"}</span>
@@ -177,7 +223,7 @@ export default function CategoriasPage() {
 
           <Button
             onClick={handleNovaCategoria}
-            className="rounded-[10px] bg-[#1F4E79] hover:bg-[#1F4E79]/90 text-white font-medium gap-2 shadow-sm"
+            className="rounded-[10px] bg-[#1F4E79] hover:bg-[#1F4E79]/90 text-white font-medium gap-2 shadow-2xs cursor-pointer"
           >
             <Plus className="h-4 w-4" />
             <span>Nova Categoria</span>
@@ -193,60 +239,190 @@ export default function CategoriasPage() {
           isImportando={isImportandoPadroes}
         />
       ) : (
-        <div className="space-y-6">
-          {/* Abas de Filtro */}
-          <div className="flex items-center justify-between border-b border-border/40 pb-3">
-            <div className="flex gap-2">
+        <div className="space-y-5">
+          {/* Métricas e Resumo Rápido (KPIs) */}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            <div className="rounded-xl border border-border/40 bg-card p-3.5 sm:p-4 shadow-2xs flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#1F4E79]/10 text-[#1F4E79] shrink-0">
+                <Layers className="h-4.5 w-4.5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Categorias</p>
+                <p className="text-lg font-bold text-foreground leading-tight">
+                  {stats.totalCategorias}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border/40 bg-card p-3.5 sm:p-4 shadow-2xs flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 shrink-0">
+                <TrendingDown className="h-4.5 w-4.5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Despesas</p>
+                <p className="text-lg font-bold text-foreground leading-tight">
+                  {stats.despesas}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border/40 bg-card p-3.5 sm:p-4 shadow-2xs flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <TrendingUp className="h-4.5 w-4.5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Receitas</p>
+                <p className="text-lg font-bold text-foreground leading-tight">
+                  {stats.receitas}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border/40 bg-card p-3.5 sm:p-4 shadow-2xs flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent text-muted-foreground shrink-0">
+                <FolderTree className="h-4.5 w-4.5" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground font-medium">Subcategorias</p>
+                <p className="text-lg font-bold text-foreground leading-tight">
+                  {stats.subcategorias}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Barra de Filtros, Busca e Alternador de Modo de Visualização */}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between border-b border-border/40 pb-3.5">
+            {/* Abas por Tipo */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
               <button
                 type="button"
                 onClick={() => setTabAtiva("todas")}
                 className={cn(
-                  "px-4 py-2 text-xs font-semibold rounded-xl transition-colors",
+                  "px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors shrink-0 cursor-pointer",
                   tabAtiva === "todas"
-                    ? "bg-[#1F4E79] text-white shadow-sm"
+                    ? "bg-[#1F4E79] text-white shadow-2xs"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
               >
-                Todas ({categorias.length})
+                Todas ({stats.totalCategorias})
               </button>
               <button
                 type="button"
                 onClick={() => setTabAtiva("despesas")}
                 className={cn(
-                  "px-4 py-2 text-xs font-semibold rounded-xl transition-colors",
+                  "px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors shrink-0 cursor-pointer",
                   tabAtiva === "despesas"
-                    ? "bg-rose-600 text-white shadow-sm"
+                    ? "bg-rose-600 text-white shadow-2xs"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
               >
-                Despesas (
-                {categorias.filter((c) => c.tipo === TipoCategoria.DESPESA).length})
+                Despesas ({stats.despesas})
               </button>
               <button
                 type="button"
                 onClick={() => setTabAtiva("receitas")}
                 className={cn(
-                  "px-4 py-2 text-xs font-semibold rounded-xl transition-colors",
+                  "px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors shrink-0 cursor-pointer",
                   tabAtiva === "receitas"
-                    ? "bg-emerald-600 text-white shadow-sm"
+                    ? "bg-emerald-600 text-white shadow-2xs"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground"
                 )}
               >
-                Receitas (
-                {categorias.filter((c) => c.tipo === TipoCategoria.RECEITA).length})
+                Receitas ({stats.receitas})
               </button>
+            </div>
+
+            {/* Busca em Tempo Real + Alternador de Visualização */}
+            <div className="flex items-center gap-2.5">
+              {/* Campo de Busca */}
+              <div className="relative flex-1 md:w-64">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar categoria ou subcategoria..."
+                  className="h-8 pl-8 pr-7 text-xs rounded-lg bg-card"
+                />
+                {searchTerm && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+
+              {/* Botões do Alternador (Lista vs Grid) */}
+              <div className="flex items-center rounded-lg border border-border/60 bg-muted/40 p-0.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setModoExibicao("lista")}
+                  className={cn(
+                    "flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
+                    modoExibicao === "lista"
+                      ? "bg-background text-foreground shadow-2xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title="Visão em Lista Compacta (Árvore Accordion)"
+                >
+                  <LayoutList className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Lista</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModoExibicao("grid")}
+                  className={cn(
+                    "flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-md transition-all cursor-pointer",
+                    modoExibicao === "grid"
+                      ? "bg-background text-foreground shadow-2xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title="Visão em Cards Grid"
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Cards</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Grid de Cards */}
+          {/* Área de Exibição das Categorias */}
           {categoriasFiltradas.length === 0 ? (
-            <div className="text-center py-12 rounded-2xl border border-dashed border-border/60 bg-accent/10">
-              <p className="text-sm text-muted-foreground">
-                Nenhuma categoria encontrada para o filtro selecionado.
+            <div className="text-center py-12 rounded-2xl border border-dashed border-border/60 bg-accent/10 space-y-2">
+              <p className="text-sm font-medium text-foreground">
+                Nenhuma categoria encontrada
               </p>
+              <p className="text-xs text-muted-foreground">
+                {searchTerm
+                  ? `Nenhum resultado para "${searchTerm}"`
+                  : "Nenhuma categoria cadastrada neste filtro."}
+              </p>
+              {searchTerm && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchTerm("")}
+                  className="mt-2 text-xs rounded-lg cursor-pointer"
+                >
+                  Limpar busca
+                </Button>
+              )}
             </div>
+          ) : modoExibicao === "lista" ? (
+            <CategoriasListView
+              categorias={categoriasFiltradas}
+              onEditar={handleEditar}
+              onDeletar={handleDeletarCategoria}
+              onCriarSubcategoria={handleCriarSubcategoria}
+              onDeletarSubcategoria={handleDeletarSubcategoria}
+              isCriandoSubcategoria={isCriandoSubcategoria}
+            />
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2 lg:grid-cols-3">
               {categoriasFiltradas.map((cat) => (
                 <CategoriaCard
                   key={cat.id}
