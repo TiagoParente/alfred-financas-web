@@ -27,4 +27,12 @@ export const authService = {
     );
     return data.data;
   },
+
+  /**
+   * Encerra a sessão e revoga o token no backend.
+   * POST /v1/auth/logout
+   */
+  async logout(): Promise<void> {
+    await api.post("/v1/auth/logout");
+  },
 };

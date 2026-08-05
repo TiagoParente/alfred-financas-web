@@ -24,9 +24,27 @@ export function useVerificarCodigo() {
       authService.verificarCodigo(payload),
     onSuccess: (data) => {
       localStorage.setItem("alfred_token", data.token);
+      localStorage.setItem("alfred_user", JSON.stringify(data.usuario));
       router.push("/dashboard");
     },
   });
+}
+
+export function useLogout() {
+  const router = useRouter();
+
+  return async () => {
+    try {
+      await authService.logout();
+    } catch {
+      // Ignora erro de API no logout para garantir limpeza local
+    } finally {
+      localStorage.removeItem("alfred_token");
+      localStorage.removeItem("alfred_user");
+      localStorage.removeItem("alfred_familia_id");
+      router.push("/entrar");
+    }
+  };
 }
 
 /**

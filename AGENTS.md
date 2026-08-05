@@ -79,6 +79,11 @@ src/
 │   ├── movimentacoes/          → Componentes, hooks e serviços de movimentações
 │   ├── cartoes/                → Componentes, hooks e serviços de cartões de crédito
 │   ├── dashboard/              → Componentes e hooks do dashboard principal
+│   ├── bancos/                 → cadastro global de instituições financeiras (código COMPE, nome, logo e cor padrão)
+│   ├── familias/               → grupos familiares
+│   ├── usuarios/               → usuários da plataforma
+│   ├── familia_usuario/        → pivô (usuário em múltiplas famílias)
+│   ├── contas_bancarias/       → corrente, poupança, reserva/investimento (vinculadas a banco opcional)
 │   └── alfred/                 → Interface e cards de insights do assistente Alfred
 ├── hooks/                      → Custom Hooks globais de React
 ├── lib/                        → Configurações de clientes HTTP (fetch/axios), Zod e envs
