@@ -43,10 +43,9 @@ const navItems: NavItem[] = [
   },
   {
     titulo: "Movimentações",
-    href: "#",
+    href: "/movimentacoes",
     icone: ArrowLeftRight,
-    ativo: false,
-    emBreve: true,
+    ativo: true,
   },
   {
     titulo: "Cartões",
