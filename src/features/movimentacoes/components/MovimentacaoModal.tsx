@@ -12,6 +12,8 @@ import {
   Loader2,
   Calendar,
   FileText,
+  CreditCard as CreditCardIcon,
+  Landmark,
 } from "lucide-react";
 import {
   Dialog,
@@ -39,6 +41,7 @@ import {
   TipoMovimentacao,
 } from "@/types/movimentacoes";
 import { useContasBancarias } from "@/features/contas_bancarias/hooks/useContasBancarias";
+import { useCartoes } from "@/features/cartoes/hooks/useCartoes";
 import { useCategorias } from "@/features/categorias/hooks/useCategorias";
 import { cn } from "@/lib/utils";
 
@@ -77,8 +80,9 @@ const movimentacaoSchema = z
       .positive("O valor deve ser maior que zero"),
     tipo: z.nativeEnum(TipoMovimentacao),
     status: z.nativeEnum(StatusMovimentacao),
-    conta_bancaria_id: z.number({ required_error: "Selecione uma conta bancária" }),
+    conta_bancaria_id: z.number().nullable().optional(),
     conta_bancaria_destino_id: z.number().nullable().optional(),
+    cartao_credito_id: z.number().nullable().optional(),
     categoria_id: z.number().nullable().optional(),
     subcategoria_id: z.number().nullable().optional(),
     data_movimentacao: z.string().min(1, "Informe a data da movimentação"),
@@ -87,14 +91,20 @@ const movimentacaoSchema = z
   })
   .refine(
     (data) => {
+      if (data.tipo === TipoMovimentacao.DESPESA) {
+        return Boolean(data.conta_bancaria_id || data.cartao_credito_id);
+      }
+      if (data.tipo === TipoMovimentacao.RECEITA) {
+        return Boolean(data.conta_bancaria_id);
+      }
       if (data.tipo === TipoMovimentacao.TRANSFERENCIA) {
-        return Boolean(data.conta_bancaria_destino_id);
+        return Boolean(data.conta_bancaria_id && data.conta_bancaria_destino_id);
       }
       return true;
     },
     {
-      message: "Selecione a conta de destino para transferências",
-      path: ["conta_bancaria_destino_id"],
+      message: "Selecione uma conta bancária ou cartão de crédito",
+      path: ["conta_bancaria_id"],
     }
   )
   .refine(
@@ -133,6 +143,7 @@ interface MovimentacaoModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   movimentacaoParaEditar?: Movimentacao | null;
+  cartaoCreditoIdPadrao?: number | null;
   onSalvar: (payload: CriarMovimentacaoPayload) => Promise<void>;
   familiaId?: number | null;
 }
@@ -143,12 +154,15 @@ export function MovimentacaoModal({
   open,
   onOpenChange,
   movimentacaoParaEditar,
+  cartaoCreditoIdPadrao,
   onSalvar,
   familiaId,
 }: MovimentacaoModalProps) {
   const { contas } = useContasBancarias(familiaId);
+  const { cartoes } = useCartoes(familiaId);
   const { categorias } = useCategorias(familiaId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [origemPagamento, setOrigemPagamento] = useState<"conta" | "cartao">("conta");
   const [valorDisplay, setValorDisplay] = useState("");
   const descricaoRef = useRef<HTMLInputElement>(null);
 
@@ -171,6 +185,7 @@ export function MovimentacaoModal({
       status: StatusMovimentacao.PAGO,
       conta_bancaria_id: undefined,
       conta_bancaria_destino_id: null,
+      cartao_credito_id: null,
       categoria_id: null,
       subcategoria_id: null,
       data_movimentacao: hoje,
@@ -182,6 +197,7 @@ export function MovimentacaoModal({
   const tipoSelecionado = watch("tipo");
   const statusSelecionado = watch("status");
   const contaBancariaIdSelecionada = watch("conta_bancaria_id");
+  const cartaoCreditoIdSelecionado = watch("cartao_credito_id");
 
   // ── Categorias filtradas por tipo ────────────────────────────────────────────
   const categoriasFiltradas = categorias.filter((cat) => {
@@ -231,27 +247,7 @@ export function MovimentacaoModal({
     [categorias, setValue]
   );
 
-  /** Label exibida no trigger do select unificado de categoria. */
-  const labelCategoriaSelecionada = useCallback(
-    (value: unknown): string | null => {
-      if (!value || typeof value !== "string") return null;
-      if (value.startsWith("cat:")) {
-        const id = parseInt(value.slice(4), 10);
-        return categorias.find((c) => Number(c.id) === id)?.nome ?? null;
-      }
-      if (value.startsWith("sub:")) {
-        const id = parseInt(value.slice(4), 10);
-        for (const cat of categorias) {
-          const sub = cat.subcategorias?.find((s) => Number(s.id) === id);
-          if (sub) return `${cat.nome} › ${sub.nome}`;
-        }
-      }
-      return null;
-    },
-    [categorias]
-  );
-
-  // ── Labels dos selects de conta ───────────────────────────────────────────────
+  // ── Labels dos selects de conta/cartão ───────────────────────────────────────
   const labelConta = useCallback(
     (value: unknown) => {
       if (!value) return null;
@@ -259,6 +255,15 @@ export function MovimentacaoModal({
       return found ? found.nome : null;
     },
     [contas]
+  );
+
+  const labelCartao = useCallback(
+    (value: unknown) => {
+      if (!value) return null;
+      const found = cartoes.find((c) => c.id === Number(value));
+      return found ? found.nome : null;
+    },
+    [cartoes]
   );
 
   const labelContaDestino = useCallback(
@@ -275,7 +280,6 @@ export function MovimentacaoModal({
   // ── Foco automático na descrição quando o modal abre ─────────────────────────
   useEffect(() => {
     if (open) {
-      // Delay para garantir que o modal terminou de animar
       const timer = setTimeout(() => {
         descricaoRef.current?.focus();
       }, 100);
@@ -287,13 +291,16 @@ export function MovimentacaoModal({
   useEffect(() => {
     if (open) {
       if (movimentacaoParaEditar) {
+        const usaCartao = Boolean(movimentacaoParaEditar.cartao_credito_id);
+        setOrigemPagamento(usaCartao ? "cartao" : "conta");
         reset({
           descricao: movimentacaoParaEditar.descricao,
           valor: Number(movimentacaoParaEditar.valor),
           tipo: movimentacaoParaEditar.tipo,
           status: movimentacaoParaEditar.status,
-          conta_bancaria_id: movimentacaoParaEditar.conta_bancaria_id,
+          conta_bancaria_id: movimentacaoParaEditar.conta_bancaria_id || null,
           conta_bancaria_destino_id: movimentacaoParaEditar.conta_bancaria_destino_id || null,
+          cartao_credito_id: movimentacaoParaEditar.cartao_credito_id || null,
           categoria_id: movimentacaoParaEditar.categoria_id || null,
           subcategoria_id: movimentacaoParaEditar.subcategoria_id || null,
           data_movimentacao: movimentacaoParaEditar.data_movimentacao,
@@ -306,14 +313,33 @@ export function MovimentacaoModal({
             ? formatarMoedaMascara(Number(movimentacaoParaEditar.valor))
             : ""
         );
+      } else if (cartaoCreditoIdPadrao) {
+        setOrigemPagamento("cartao");
+        reset({
+          descricao: "",
+          valor: undefined,
+          tipo: TipoMovimentacao.DESPESA,
+          status: StatusMovimentacao.PENDENTE,
+          conta_bancaria_id: null,
+          conta_bancaria_destino_id: null,
+          cartao_credito_id: cartaoCreditoIdPadrao,
+          categoria_id: null,
+          subcategoria_id: null,
+          data_movimentacao: hoje,
+          data_vencimento: hoje,
+          observacao: "",
+        });
+        setValorDisplay("");
       } else {
+        setOrigemPagamento("conta");
         reset({
           descricao: "",
           valor: undefined,
           tipo: TipoMovimentacao.DESPESA,
           status: StatusMovimentacao.PAGO,
-          conta_bancaria_id: contas.length > 0 ? contas[0].id : undefined,
+          conta_bancaria_id: contas.length > 0 ? contas[0].id : null,
           conta_bancaria_destino_id: null,
+          cartao_credito_id: null,
           categoria_id: null,
           subcategoria_id: null,
           data_movimentacao: hoje,
@@ -323,7 +349,25 @@ export function MovimentacaoModal({
         setValorDisplay("");
       }
     }
-  }, [open, movimentacaoParaEditar, reset, contas, hoje]);
+  }, [open, movimentacaoParaEditar, cartaoCreditoIdPadrao, reset, contas, cartoes, hoje]);
+
+  // Alternar Origem de Pagamento
+  const handleTrocarOrigemPagamento = (origem: "conta" | "cartao") => {
+    setOrigemPagamento(origem);
+    if (origem === "cartao") {
+      setValue("conta_bancaria_id", null);
+      if (cartoes.length > 0) {
+        setValue("cartao_credito_id", cartoes[0].id);
+      }
+      setValue("status", StatusMovimentacao.PENDENTE);
+    } else {
+      setValue("cartao_credito_id", null);
+      if (contas.length > 0) {
+        setValue("conta_bancaria_id", contas[0].id);
+      }
+      setValue("status", StatusMovimentacao.PAGO);
+    }
+  };
 
   // ── Submit ────────────────────────────────────────────────────────────────────
   const onSubmit = async (data: MovimentacaoFormData) => {
@@ -383,6 +427,11 @@ export function MovimentacaoModal({
                   setValue("categoria_id", null);
                   setValue("subcategoria_id", null);
                   setValue("conta_bancaria_destino_id", null);
+                  if (value !== TipoMovimentacao.DESPESA) {
+                    setOrigemPagamento("conta");
+                    setValue("cartao_credito_id", null);
+                    if (contas.length > 0) setValue("conta_bancaria_id", contas[0].id);
+                  }
                 }}
                 className={cn(
                   "flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer",
@@ -397,6 +446,42 @@ export function MovimentacaoModal({
             ))}
           </div>
 
+          {/* Se for DESPESA: Selector da Origem do Lançamento (Conta Bancária vs Cartão de Crédito) */}
+          {tipoSelecionado === TipoMovimentacao.DESPESA && cartoes.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Forma de Lançamento / Origem</Label>
+              <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-muted/30 border border-border/40">
+                <button
+                  type="button"
+                  onClick={() => handleTrocarOrigemPagamento("conta")}
+                  className={cn(
+                    "flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all cursor-pointer",
+                    origemPagamento === "conta"
+                      ? "bg-background text-foreground shadow-2xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Landmark className="h-3.5 w-3.5" />
+                  <span>Conta Bancária (Débito/Pix)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleTrocarOrigemPagamento("cartao")}
+                  className={cn(
+                    "flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all cursor-pointer",
+                    origemPagamento === "cartao"
+                      ? "bg-background text-foreground shadow-2xs font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <CreditCardIcon className="h-3.5 w-3.5 text-amber-500" />
+                  <span>Cartão de Crédito (Fatura)</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Descrição e Valor */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* Descrição */}
@@ -408,7 +493,6 @@ export function MovimentacaoModal({
                   placeholder="Ex: Supermercado, Salário, Pix..."
                   {...register("descricao")}
                   ref={(el) => {
-                    // Merge refs: react-hook-form ref + nosso ref de foco
                     register("descricao").ref(el);
                     (descricaoRef as React.MutableRefObject<HTMLInputElement | null>).current = el;
                   }}
@@ -445,47 +529,78 @@ export function MovimentacaoModal({
             </div>
           </div>
 
-          {/* Contas Bancárias */}
+          {/* Seleção de Conta ou Cartão de Crédito */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {/* Conta de Origem */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">
-                {tipoSelecionado === TipoMovimentacao.TRANSFERENCIA ? "Conta de Origem" : "Conta Bancária"}
-              </Label>
-              <Select
-                value={watch("conta_bancaria_id") ?? undefined}
-                onValueChange={(val: number | null) =>
-                  val !== null && setValue("conta_bancaria_id", val)
-                }
-              >
-                <SelectTrigger className="h-10 rounded-xl bg-background/60 border-border/60 text-xs">
-                  <SelectValue placeholder="Selecione a conta">
-                    {(value: unknown) => labelConta(value) ?? <span className="text-muted-foreground">Selecione a conta</span>}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="rounded-xl">
-                  {contas.map((c) => (
-                    <SelectItem key={c.id} value={c.id} label={c.nome}>
-                      {c.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.conta_bancaria_id && (
-                <p className="text-[11px] text-destructive font-medium">
-                  {errors.conta_bancaria_id.message}
-                </p>
-              )}
-            </div>
+            {/* Seleção se Origem for Cartão de Crédito */}
+            {tipoSelecionado === TipoMovimentacao.DESPESA && origemPagamento === "cartao" ? (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Cartão de Crédito *</Label>
+                <Select
+                  value={cartaoCreditoIdSelecionado ? String(cartaoCreditoIdSelecionado) : undefined}
+                  onValueChange={(val) =>
+                    setValue("cartao_credito_id", val ? Number(val) : null)
+                  }
+                >
+                  <SelectTrigger className="h-10 rounded-xl bg-background/60 border-border/60 text-xs">
+                    <SelectValue placeholder="Selecione o cartão">
+                      {(value: unknown) => labelCartao(value) ?? <span className="text-muted-foreground">Selecione o cartão</span>}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    {cartoes.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)} label={c.nome}>
+                        {c.nome} ({c.banco?.nome ?? "Cartão"})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.cartao_credito_id && (
+                  <p className="text-[11px] text-destructive font-medium">
+                    {errors.cartao_credito_id.message}
+                  </p>
+                )}
+              </div>
+            ) : (
+              /* Seleção de Conta de Origem */
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">
+                  {tipoSelecionado === TipoMovimentacao.TRANSFERENCIA ? "Conta de Origem" : "Conta Bancária"}
+                </Label>
+                <Select
+                  value={watch("conta_bancaria_id") ? String(watch("conta_bancaria_id")) : undefined}
+                  onValueChange={(val) =>
+                    setValue("conta_bancaria_id", val ? Number(val) : null)
+                  }
+                >
+                  <SelectTrigger className="h-10 rounded-xl bg-background/60 border-border/60 text-xs">
+                    <SelectValue placeholder="Selecione a conta">
+                      {(value: unknown) => labelConta(value) ?? <span className="text-muted-foreground">Selecione a conta</span>}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    {contas.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)} label={c.nome}>
+                        {c.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.conta_bancaria_id && (
+                  <p className="text-[11px] text-destructive font-medium">
+                    {errors.conta_bancaria_id.message}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Conta de Destino (Transferência) */}
             {tipoSelecionado === TipoMovimentacao.TRANSFERENCIA && (
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Conta de Destino</Label>
                 <Select
-                  value={watch("conta_bancaria_destino_id") ?? undefined}
-                  onValueChange={(val: number | null) =>
-                    setValue("conta_bancaria_destino_id", val)
+                  value={watch("conta_bancaria_destino_id") ? String(watch("conta_bancaria_destino_id")) : undefined}
+                  onValueChange={(val) =>
+                    setValue("conta_bancaria_destino_id", val ? Number(val) : null)
                   }
                 >
                   <SelectTrigger className="h-10 rounded-xl bg-background/60 border-border/60 text-xs">
@@ -499,7 +614,7 @@ export function MovimentacaoModal({
                     {contas
                       .filter((c) => c.id !== contaBancariaIdSelecionada)
                       .map((c) => (
-                        <SelectItem key={c.id} value={c.id} label={c.nome}>
+                        <SelectItem key={c.id} value={String(c.id)} label={c.nome}>
                           {c.nome}
                         </SelectItem>
                       ))}
@@ -558,12 +673,12 @@ export function MovimentacaoModal({
                 <p className="text-xs font-semibold truncate">
                   {statusSelecionado === StatusMovimentacao.PAGO
                     ? "Já foi realizada / paga"
-                    : "Pendente (A vencer)"}
+                    : "Pendente (Na Fatura / A Vencer)"}
                 </p>
                 <p className="text-[10px] text-muted-foreground">
                   {statusSelecionado === StatusMovimentacao.PAGO
                     ? "Impacta o saldo imediatamente"
-                    : "Será marcada como pendente"}
+                    : "Será contabilizada na fatura do cartão"}
                 </p>
               </div>
               <Switch

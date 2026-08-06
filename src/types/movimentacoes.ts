@@ -1,5 +1,6 @@
 import { Categoria, Subcategoria } from "./categorias";
 import { ContaBancaria } from "./contas";
+import { CartaoCredito } from "./cartoes";
 
 export enum TipoMovimentacao {
   RECEITA = "receita",
@@ -35,10 +36,12 @@ export interface Movimentacao {
   familia_id: number;
   usuario_id: number;
   usuario_nome: string | null;
-  conta_bancaria_id: number;
+  conta_bancaria_id?: number | null;
   conta_bancaria?: ContaBancaria | null;
   conta_bancaria_destino_id?: number | null;
   conta_bancaria_destino?: ContaBancaria | null;
+  cartao_credito_id?: number | null;
+  cartao_credito?: CartaoCredito | null;
   categoria_id?: number | null;
   categoria?: Categoria | null;
   subcategoria_id?: number | null;
@@ -65,14 +68,16 @@ export interface FiltroMovimentacaoParams {
   status?: StatusMovimentacao;
   categoria_id?: number;
   conta_bancaria_id?: number;
+  cartao_credito_id?: number;
   busca?: string;
   per_page?: number;
   page?: number;
 }
 
 export interface CriarMovimentacaoPayload {
-  conta_bancaria_id: number;
+  conta_bancaria_id?: number | null;
   conta_bancaria_destino_id?: number | null;
+  cartao_credito_id?: number | null;
   categoria_id?: number | null;
   subcategoria_id?: number | null;
   descricao: string;
@@ -87,8 +92,9 @@ export interface CriarMovimentacaoPayload {
 }
 
 export interface AtualizarMovimentacaoPayload {
-  conta_bancaria_id?: number;
+  conta_bancaria_id?: number | null;
   conta_bancaria_destino_id?: number | null;
+  cartao_credito_id?: number | null;
   categoria_id?: number | null;
   subcategoria_id?: number | null;
   descricao?: string;

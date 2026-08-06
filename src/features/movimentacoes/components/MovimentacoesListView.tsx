@@ -4,13 +4,14 @@ import { useState } from "react";
 import { Plus, ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
-import { Movimentacao, CriarMovimentacaoPayload } from "@/types/movimentacoes";
+import { Movimentacao, CriarMovimentacaoPayload, StatusMovimentacao } from "@/types/movimentacoes";
 import { useMovimentacoes } from "../hooks/useMovimentacoes";
 import { ResumoMovimentacoesCards } from "./ResumoMovimentacoesCards";
 import { MovimentacaoFiltros } from "./MovimentacaoFiltros";
 import { MovimentacaoListItem } from "./MovimentacaoListItem";
 import { MovimentacaoModal } from "./MovimentacaoModal";
 import { DeletarMovimentacaoModal } from "./DeletarMovimentacaoModal";
+import { PagarMovimentacaoModal } from "./PagarMovimentacaoModal";
 import { MovimentacoesEmptyState } from "./MovimentacoesEmptyState";
 import { MovimentacoesSkeleton } from "./MovimentacoesSkeleton";
 import { SeletorMes } from "./SeletorMes";
@@ -43,6 +44,9 @@ export function MovimentacoesListView({ familiaId }: MovimentacoesListViewProps)
   const [deletarModalOpen, setDeletarModalOpen] = useState(false);
   const [movimentacaoParaDeletar, setMovimentacaoParaDeletar] = useState<Movimentacao | null>(null);
 
+  const [pagarModalOpen, setPagarModalOpen] = useState(false);
+  const [movimentacaoParaPagar, setMovimentacaoParaPagar] = useState<Movimentacao | null>(null);
+
   const handleNovaMovimentacao = () => {
     setMovimentacaoParaEditar(null);
     setModalOpen(true);
@@ -56,6 +60,11 @@ export function MovimentacoesListView({ familiaId }: MovimentacoesListViewProps)
   const handleDeletarClick = (movimentacao: Movimentacao) => {
     setMovimentacaoParaDeletar(movimentacao);
     setDeletarModalOpen(true);
+  };
+
+  const handleMarcarComoPagoClick = (movimentacao: Movimentacao) => {
+    setMovimentacaoParaPagar(movimentacao);
+    setPagarModalOpen(true);
   };
 
   const handleSalvarMovimentacao = async (payload: CriarMovimentacaoPayload) => {
@@ -79,12 +88,31 @@ export function MovimentacoesListView({ familiaId }: MovimentacoesListViewProps)
     }
   };
 
-  const handleMarcarComoPago = async (movimentacao: Movimentacao) => {
+  const handleConfirmarPagamento = async ({
+    id,
+    data_pagamento,
+    valor,
+    observacao,
+  }: {
+    id: number;
+    data_pagamento: string;
+    valor: number;
+    observacao?: string | null;
+  }) => {
     try {
-      await marcarComoPago({ id: movimentacao.id });
+      await atualizarMovimentacao({
+        id,
+        payload: {
+          status: StatusMovimentacao.PAGO,
+          data_pagamento,
+          data_movimentacao: data_pagamento,
+          valor,
+          observacao,
+        },
+      });
       toast.add({
         title: "Status atualizado",
-        description: `A movimentação "${movimentacao.descricao}" foi marcada como paga.`,
+        description: `A movimentação foi marcada como paga com sucesso.`,
         type: "success",
       });
     } catch {
@@ -200,7 +228,7 @@ export function MovimentacoesListView({ familiaId }: MovimentacoesListViewProps)
                   movimentacao={item}
                   onEditar={handleEditar}
                   onDeletar={handleDeletarClick}
-                  onMarcarPago={handleMarcarComoPago}
+                  onMarcarPago={handleMarcarComoPagoClick}
                 />
               ))}
 
@@ -260,6 +288,13 @@ export function MovimentacoesListView({ familiaId }: MovimentacoesListViewProps)
         onOpenChange={setDeletarModalOpen}
         movimentacao={movimentacaoParaDeletar}
         onConfirmar={handleConfirmarDeletar}
+      />
+
+      <PagarMovimentacaoModal
+        open={pagarModalOpen}
+        onOpenChange={setPagarModalOpen}
+        movimentacao={movimentacaoParaPagar}
+        onConfirmar={handleConfirmarPagamento}
       />
     </div>
   );

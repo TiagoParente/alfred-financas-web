@@ -49,10 +49,9 @@ const navItems: NavItem[] = [
   },
   {
     titulo: "Cartões",
-    href: "#",
+    href: "/cartoes",
     icone: CreditCard,
-    ativo: false,
-    emBreve: true,
+    ativo: true,
   },
   {
     titulo: "Metas & Reservas",

@@ -37,7 +37,6 @@ export function useMovimentacoes(familiaId?: number | null) {
     }));
   };
 
-
   const queryKey = ["movimentacoes", familiaId, filtros];
 
   const {
@@ -56,6 +55,8 @@ export function useMovimentacoes(familiaId?: number | null) {
   const invalidateQueries = () => {
     queryClient.invalidateQueries({ queryKey: ["movimentacoes"] });
     queryClient.invalidateQueries({ queryKey: ["contas-bancarias"] });
+    queryClient.invalidateQueries({ queryKey: ["cartoes-credito"] });
+    queryClient.invalidateQueries({ queryKey: ["fatura-cartao"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-resumo"] });
   };
 
