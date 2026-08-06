@@ -55,10 +55,9 @@ const navItems: NavItem[] = [
   },
   {
     titulo: "Metas & Reservas",
-    href: "#",
+    href: "/metas",
     icone: Target,
-    ativo: false,
-    emBreve: true,
+    ativo: true,
   },
 ];
 
