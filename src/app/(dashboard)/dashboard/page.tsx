@@ -1,32 +1,50 @@
 "use client";
 
 import { useFamilias } from "@/features/familias/hooks/useFamilias";
+import { useDashboard } from "@/features/dashboard/hooks/useDashboard";
 import { useContasBancarias } from "@/features/contas_bancarias/hooks/useContasBancarias";
-import { ResumoSaldosCards } from "@/features/contas_bancarias/components/ResumoSaldosCards";
+import { DashboardKpiCards } from "@/features/dashboard/components/DashboardKpiCards";
+import { AlfredInsightsCard } from "@/features/dashboard/components/AlfredInsightsCard";
+import { ProximosVencimentosCard } from "@/features/dashboard/components/ProximosVencimentosCard";
+import { GraficoReceitasDespesas } from "@/features/dashboard/components/GraficoReceitasDespesas";
 import { ContaBancariaCard } from "@/features/contas_bancarias/components/ContaBancariaCard";
+import { ContaBancariaModal } from "@/features/contas_bancarias/components/ContaBancariaModal";
+import { ContaBancaria } from "@/types/contas";
+import { OrcamentoListItem } from "@/features/orcamentos/components/OrcamentoListItem";
 import { formatarMoeda } from "@/utils/formatters";
 import {
-  Sparkles,
-  TrendingUp,
-  TrendingDown,
-  Landmark,
   Plus,
   ArrowRight,
-  ShieldCheck,
-  CheckCircle2,
+  Landmark,
+  Target,
+  PieChart,
+  Calendar,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useState } from "react";
-import { ContaBancariaModal } from "@/features/contas_bancarias/components/ContaBancariaModal";
-import { ContaBancaria } from "@/types/contas";
 
 export default function DashboardPage() {
   const { familiaAtiva } = useFamilias();
+
+  // Estado do Período (Mês e Ano)
+  const dataAtual = new Date();
+  const [mes, setMes] = useState<number>(dataAtual.getMonth() + 1);
+  const [ano, setAno] = useState<number>(dataAtual.getFullYear());
+
+  const {
+    saldos,
+    mensal,
+    proximosVencimentos,
+    orcamentos,
+    metas,
+    alfredInsights,
+    isLoading,
+  } = useDashboard(familiaAtiva?.id, mes, ano);
+
   const {
     contas,
-    resumo,
-    isLoading,
     criarConta,
     isCriando,
     atualizarConta,
@@ -65,9 +83,24 @@ export default function DashboardPage() {
     }
   };
 
+  const mesesOptions = [
+    { valor: 1, nome: "Janeiro" },
+    { valor: 2, nome: "Fevereiro" },
+    { valor: 3, nome: "Março" },
+    { valor: 4, nome: "Abril" },
+    { valor: 5, nome: "Maio" },
+    { valor: 6, nome: "Junho" },
+    { valor: 7, nome: "Julho" },
+    { valor: 8, nome: "Agosto" },
+    { valor: 9, nome: "Setembro" },
+    { valor: 10, nome: "Outubro" },
+    { valor: 11, nome: "Novembro" },
+    { valor: 12, nome: "Dezembro" },
+  ];
+
   return (
     <div className="space-y-8">
-      {/* Header com Boas-Vindas */}
+      {/* Header com Boas-Vindas e Seletor de Mês/Ano */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
@@ -79,7 +112,35 @@ export default function DashboardPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Seletor de Período */}
+          <div className="flex items-center gap-2 bg-card border border-border/50 rounded-xl px-3 py-1.5 shadow-2xs">
+            <Calendar className="h-4 w-4 text-[#1F4E79]" />
+            <select
+              value={mes}
+              onChange={(e) => setMes(Number(e.target.value))}
+              className="bg-transparent text-sm font-semibold text-foreground focus:outline-none cursor-pointer"
+            >
+              {mesesOptions.map((m) => (
+                <option key={m.valor} value={m.valor} className="bg-card text-foreground">
+                  {m.nome}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={ano}
+              onChange={(e) => setAno(Number(e.target.value))}
+              className="bg-transparent text-sm font-semibold text-foreground focus:outline-none cursor-pointer border-l border-border/40 pl-2"
+            >
+              {[2025, 2026, 2027].map((a) => (
+                <option key={a} value={a} className="bg-card text-foreground">
+                  {a}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <Button
             onClick={() => {
               setContaEmEdicao(null);
@@ -93,107 +154,159 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 1. Saldo Consolidado e Métrica das Contas */}
-      {!isLoading && <ResumoSaldosCards resumo={resumo} />}
-
-      {/* 2. Grid de Receitas, Despesas & Investimentos */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-[16px] border border-border/50 bg-card p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase text-muted-foreground">
-              Receitas do Mês
-            </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#22C55E]/10 text-[#22C55E]">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className="text-xl font-bold text-foreground">
-              {formatarMoeda(0)}
-            </span>
-            <p className="text-xs text-muted-foreground mt-1">
-              Módulo de movimentações em breve (v1)
-            </p>
-          </div>
+      {/* 1. KPIs Principais de Saldo e Fluxo Mensal */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-28 rounded-[16px] bg-accent/40 animate-pulse" />
+          ))}
         </div>
+      ) : (
+        <DashboardKpiCards saldos={saldos} mensal={mensal} />
+      )}
 
-        <div className="rounded-[16px] border border-border/50 bg-card p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase text-muted-foreground">
-              Despesas do Mês
-            </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/10 text-red-500">
-              <TrendingDown className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className="text-xl font-bold text-foreground">
-              {formatarMoeda(0)}
-            </span>
-            <p className="text-xs text-muted-foreground mt-1">
-              Módulo de movimentações em breve (v1)
-            </p>
-          </div>
-        </div>
+      {/* 2. Insights Proativos do Alfred */}
+      {!isLoading && alfredInsights && (
+        <AlfredInsightsCard
+          insights={alfredInsights}
+          familiaNome={familiaAtiva?.nome}
+        />
+      )}
 
-        <div className="rounded-[16px] border border-border/50 bg-card p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase text-muted-foreground">
-              Reservas Acumuladas
-            </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1F4E79]/10 text-[#1F4E79]">
-              <ShieldCheck className="h-4 w-4" />
-            </div>
-          </div>
-          <div className="mt-3">
-            <span className="text-xl font-bold text-[#1F4E79]">
-              {formatarMoeda(resumo.saldo_reservas)}
-            </span>
-            <p className="text-xs text-muted-foreground mt-1">
-              Contas de investimento e reserva
-            </p>
-          </div>
-        </div>
+      {/* 3. Grid de Gráfico de Fluxo de Caixa & Próximos Vencimentos */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {isLoading ? (
+          <div className="h-72 rounded-[16px] bg-accent/40 animate-pulse" />
+        ) : (
+          <GraficoReceitasDespesas mensal={mensal} />
+        )}
+
+        {isLoading ? (
+          <div className="h-72 rounded-[16px] bg-accent/40 animate-pulse" />
+        ) : (
+          <ProximosVencimentosCard vencimentos={proximosVencimentos} />
+        )}
       </div>
 
-      {/* 3. Card do Alfred AI Assistant */}
-      <div className="rounded-[20px] border border-[#1F4E79]/20 bg-gradient-to-br from-[#1F4E79]/5 via-card to-background p-6 shadow-sm">
-        <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F4E79] text-white shadow-md">
-            <Sparkles className="h-6 w-6" />
-          </div>
-          <div className="space-y-2 flex-1">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-foreground">
-                Insights do Alfred
-              </h2>
-              <span className="text-xs font-medium text-[#1F4E79] bg-[#1F4E79]/10 px-2.5 py-0.5 rounded-full">
-                Assistente Pessoal
-              </span>
-            </div>
-            <p className="text-sm text-foreground/90 leading-relaxed">
-              Olá! Eu sou o <strong>Alfred</strong>. Sua estrutura de contas bancárias da{" "}
-              <strong>{familiaAtiva?.nome || "sua família"}</strong> está configurada.
-            </p>
-            {contas.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                Recomendo cadastrar sua primeira conta bancária para ativarmos o monitoramento do seu saldo disponível e das suas reservas.
-              </p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Seu patrimônio total de <strong>{formatarMoeda(resumo.saldo_total)}</strong> está distribuído em {resumo.total_contas} contas bancárias ativas.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* 4. Minhas Contas Bancárias (Visão Rápida) */}
+      {/* 4. Orçamentos da Família (Resumo Rápido) */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-foreground">
-            Contas Bancárias Ativas
-          </h2>
+          <div className="flex items-center gap-2">
+            <PieChart className="h-5 w-5 text-[#1F4E79]" />
+            <h2 className="text-base font-bold text-foreground">
+              Orçamentos por Categoria
+            </h2>
+          </div>
+          <Link
+            href="/orcamentos"
+            className="flex items-center gap-1 text-xs font-semibold text-[#1F4E79] hover:underline"
+          >
+            <span>Gerenciar Orçamentos</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        {orcamentos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-[16px] border border-dashed border-border/70 p-6 text-center bg-accent/10">
+            <PieChart className="h-8 w-8 text-[#1F4E79] mb-2" />
+            <p className="text-sm font-medium text-foreground">Nenhum orçamento cadastrado para este mês</p>
+            <Link href="/orcamentos">
+              <Button variant="outline" className="mt-3 text-xs rounded-[10px]">
+                Definir Orçamentos
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {orcamentos.slice(0, 4).map((orcamento) => (
+              <OrcamentoListItem
+                key={orcamento.id}
+                orcamento={orcamento}
+                onEditar={() => {}}
+                onDeletar={() => {}}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 5. Metas & Reservas Financeiras */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Target className="h-5 w-5 text-[#1F4E79]" />
+            <h2 className="text-base font-bold text-foreground">
+              Metas & Reservas Financeiras
+            </h2>
+          </div>
+          <Link
+            href="/metas"
+            className="flex items-center gap-1 text-xs font-semibold text-[#1F4E79] hover:underline"
+          >
+            <span>Ver todas as metas</span>
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+
+        {metas.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-[16px] border border-dashed border-border/70 p-6 text-center bg-accent/10">
+            <Target className="h-8 w-8 text-[#1F4E79] mb-2" />
+            <p className="text-sm font-medium text-foreground">Nenhuma meta cadastrada</p>
+            <Link href="/metas">
+              <Button variant="outline" className="mt-3 text-xs rounded-[10px]">
+                Criar Nova Meta
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {metas.slice(0, 4).map((meta) => {
+              const percentual = meta.valor_alvo > 0
+                ? Math.min(100, (meta.valor_atual / meta.valor_alvo) * 100)
+                : 0;
+
+              return (
+                <div
+                  key={meta.id}
+                  className="rounded-[16px] border border-border/50 bg-card p-4 shadow-sm space-y-3"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm text-foreground truncate">
+                      {meta.nome}
+                    </span>
+                    <span className="text-xs font-bold text-[#1F4E79]">
+                      {percentual.toFixed(0)}%
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="h-2 w-full rounded-full bg-accent overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-[#1F4E79] transition-all duration-500"
+                        style={{ width: `${percentual}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-0.5">
+                      <span>{formatarMoeda(meta.valor_atual)}</span>
+                      <span>alvo: {formatarMoeda(meta.valor_alvo)}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* 6. Contas Bancárias Ativas */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Landmark className="h-5 w-5 text-[#1F4E79]" />
+            <h2 className="text-base font-bold text-foreground">
+              Contas Bancárias Ativas
+            </h2>
+          </div>
           <Link
             href="/contas-bancarias"
             className="flex items-center gap-1.5 text-xs font-semibold text-[#1F4E79] hover:underline"
@@ -235,34 +348,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* 5. Checklist Financeiro */}
-      <div className="rounded-[16px] border border-border/50 bg-card p-5 shadow-sm space-y-3">
-        <h3 className="text-sm font-bold text-foreground">
-          Checklist de Configuração Inicial
-        </h3>
-        <div className="space-y-2">
-          <div className="flex items-center gap-2.5 text-xs text-foreground">
-            <CheckCircle2 className="h-4 w-4 text-[#22C55E]" />
-            <span>Criar conta de usuário e validar e-mail via OTP</span>
-          </div>
-          <div className="flex items-center gap-2.5 text-xs text-foreground">
-            <CheckCircle2 className="h-4 w-4 text-[#22C55E]" />
-            <span>Configurar grupo familiar ativo</span>
-          </div>
-          <div className="flex items-center gap-2.5 text-xs text-foreground">
-            {contas.length > 0 ? (
-              <CheckCircle2 className="h-4 w-4 text-[#22C55E]" />
-            ) : (
-              <div className="h-4 w-4 rounded-full border border-muted-foreground/40" />
-            )}
-            <span className={contas.length > 0 ? "line-through text-muted-foreground" : ""}>
-              Cadastrar primeira conta bancária da família
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal de Criação/Edição */}
+      {/* Modal de Criação/Edição de Conta */}
       <ContaBancariaModal
         open={modalFormAberta}
         onOpenChange={setModalFormAberta}
