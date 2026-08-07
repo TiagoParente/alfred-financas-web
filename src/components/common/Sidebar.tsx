@@ -9,6 +9,7 @@ import {
   ArrowLeftRight,
   CreditCard,
   Target,
+  CalendarSync,
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -45,6 +46,12 @@ const navItems: NavItem[] = [
     titulo: "Movimentações",
     href: "/movimentacoes",
     icone: ArrowLeftRight,
+    ativo: true,
+  },
+  {
+    titulo: "Contas Fixas",
+    href: "/contas-fixas",
+    icone: CalendarSync,
     ativo: true,
   },
   {

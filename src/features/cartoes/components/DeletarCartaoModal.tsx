@@ -49,7 +49,7 @@ export function DeletarCartaoModal({
           <p className="text-sm text-muted-foreground leading-relaxed">
             Tem certeza de que deseja excluir o cartão{" "}
             <strong className="text-foreground font-semibold">
-              "{cartao.nome}"
+              &quot;{cartao.nome}&quot;
             </strong>
             ?
           </p>

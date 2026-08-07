@@ -261,9 +261,15 @@ export function MetaModal({
                     <SelectValue placeholder="Selecione o status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={StatusMeta.EM_ANDAMENTO}>Em Andamento</SelectItem>
-                    <SelectItem value={StatusMeta.CONCLUIDA}>Concluída</SelectItem>
-                    <SelectItem value={StatusMeta.CANCELADA}>Cancelada</SelectItem>
+                    <SelectItem value={StatusMeta.EM_ANDAMENTO} label="Em Andamento">
+                      Em Andamento
+                    </SelectItem>
+                    <SelectItem value={StatusMeta.CONCLUIDA} label="Concluída">
+                      Concluída
+                    </SelectItem>
+                    <SelectItem value={StatusMeta.CANCELADA} label="Cancelada">
+                      Cancelada
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>

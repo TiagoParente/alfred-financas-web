@@ -34,7 +34,6 @@ export function MovimentacoesListView({ familiaId }: MovimentacoesListViewProps)
     refetch,
     criarMovimentacao,
     atualizarMovimentacao,
-    marcarComoPago,
     deletarMovimentacao,
   } = useMovimentacoes(familiaId);
 

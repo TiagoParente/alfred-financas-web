@@ -86,8 +86,6 @@ export function PagarMovimentacaoModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [valorDisplay, setValorDisplay] = useState("");
 
-  const hoje = new Date().toISOString().split("T")[0];
-
   const {
     register,
     handleSubmit,
@@ -97,14 +95,23 @@ export function PagarMovimentacaoModal({
   } = useForm<PagarMovimentacaoFormData>({
     resolver: zodResolver(pagarMovimentacaoSchema),
     defaultValues: {
-      data_pagamento: hoje,
+      data_pagamento: "",
       valor: 0,
       observacao: "",
     },
   });
 
+  const [prevMovId, setPrevMovId] = useState<number | null>(null);
+
+  if (open && movimentacao && movimentacao.id !== prevMovId) {
+    setPrevMovId(movimentacao.id);
+    const valorNum = Number(movimentacao.valor) || 0;
+    setValorDisplay(valorNum > 0 ? formatarMoedaMascara(valorNum) : "");
+  }
+
   useEffect(() => {
     if (open && movimentacao) {
+      const hoje = new Date().toISOString().split("T")[0];
       const valorNum = Number(movimentacao.valor) || 0;
       const dataInicial = movimentacao.data_pagamento || hoje;
       const obsInicial = movimentacao.observacao || "";
@@ -114,10 +121,8 @@ export function PagarMovimentacaoModal({
         valor: valorNum,
         observacao: obsInicial,
       });
-
-      setValorDisplay(valorNum > 0 ? formatarMoedaMascara(valorNum) : "");
     }
-  }, [open, movimentacao, reset, hoje]);
+  }, [open, movimentacao, reset]);
 
   if (!movimentacao) return null;
 

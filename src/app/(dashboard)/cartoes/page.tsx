@@ -257,7 +257,7 @@ export default function CartoesPage() {
                 Nenhum cartão encontrado
               </p>
               <p className="text-xs text-muted-foreground">
-                Nenhum resultado corresponde à busca "{searchTerm}".
+                Nenhum resultado corresponde à busca &quot;{searchTerm}&quot;.
               </p>
               <Button
                 variant="outline"

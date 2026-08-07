@@ -63,8 +63,6 @@ export function AporteResgateModal({
   onSubmit,
   isSubmitting = false,
 }: AporteResgateModalProps) {
-  const dataHoje = new Date().toISOString().split("T")[0];
-
   const {
     register,
     handleSubmit,
@@ -81,7 +79,7 @@ export function AporteResgateModal({
       conta_bancaria_id: "",
       meta_id: "",
       valor: "",
-      data_movimentacao: dataHoje,
+      data_movimentacao: "",
       motivo: "",
       observacao: "",
     },
@@ -93,6 +91,7 @@ export function AporteResgateModal({
 
   useEffect(() => {
     if (open) {
+      const dataHoje = new Date().toISOString().split("T")[0];
       const defaultAccount = contas.find((c) => c.incluir_nas_reservas) || contas[0];
       reset({
         tipo: TipoMovimentacaoInvestimento.APORTE,
@@ -104,7 +103,7 @@ export function AporteResgateModal({
         observacao: "",
       });
     }
-  }, [open, metaPreSelecionada, contas, dataHoje, reset]);
+  }, [open, metaPreSelecionada, contas, reset]);
 
   const handleFormSubmit = async (data: AporteResgateFormData) => {
     try {
@@ -201,7 +200,11 @@ export function AporteResgateModal({
               </SelectTrigger>
               <SelectContent>
                 {contas.map((conta) => (
-                  <SelectItem key={conta.id} value={conta.id.toString()}>
+                  <SelectItem
+                    key={conta.id}
+                    value={conta.id.toString()}
+                    label={`${conta.nome} (${formatarMoeda(conta.saldo_atual)})`}
+                  >
                     {conta.nome} ({formatarMoeda(conta.saldo_atual)})
                   </SelectItem>
                 ))}
@@ -225,9 +228,15 @@ export function AporteResgateModal({
                 <SelectValue placeholder="Nenhuma meta (Apenas reserva geral)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="nenhuma">Sem meta específica (Reserva Geral)</SelectItem>
+                <SelectItem value="nenhuma" label="Sem meta específica (Reserva Geral)">
+                  Sem meta específica (Reserva Geral)
+                </SelectItem>
                 {metas.map((meta) => (
-                  <SelectItem key={meta.id} value={meta.id.toString()}>
+                  <SelectItem
+                    key={meta.id}
+                    value={meta.id.toString()}
+                    label={`${meta.nome} (${formatarMoeda(meta.valor_atual)} / ${formatarMoeda(meta.valor_alvo)})`}
+                  >
                     {meta.nome} ({formatarMoeda(meta.valor_atual)} / {formatarMoeda(meta.valor_alvo)})
                   </SelectItem>
                 ))}

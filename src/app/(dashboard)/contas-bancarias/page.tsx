@@ -3,16 +3,19 @@
 import { useState, useMemo } from "react";
 import { useFamilias } from "@/features/familias/hooks/useFamilias";
 import { useContasBancarias } from "@/features/contas_bancarias/hooks/useContasBancarias";
+import { useMovimentacoes } from "@/features/movimentacoes/hooks/useMovimentacoes";
 import { ContaBancaria, TipoContaBancaria } from "@/types/contas";
 import { ResumoSaldosCards } from "@/features/contas_bancarias/components/ResumoSaldosCards";
 import { ContaBancariaCard } from "@/features/contas_bancarias/components/ContaBancariaCard";
 import { ContasBancariasListView } from "@/features/contas_bancarias/components/ContasBancariasListView";
 import { ContaBancariaModal } from "@/features/contas_bancarias/components/ContaBancariaModal";
 import { DeletarContaModal } from "@/features/contas_bancarias/components/DeletarContaModal";
+import { MovimentacaoModal } from "@/features/movimentacoes/components/MovimentacaoModal";
 import { ContasBancariasSkeleton } from "@/features/contas_bancarias/components/ContasBancariasSkeleton";
 import { ContasBancariasEmptyState } from "@/features/contas_bancarias/components/ContasBancariasEmptyState";
 import {
   Plus,
+  PlusCircle,
   RefreshCw,
   AlertCircle,
   Search,
@@ -44,6 +47,8 @@ export default function ContasBancariasPage() {
     isDeletando,
   } = useContasBancarias(familiaAtivaId);
 
+  const { criarMovimentacao } = useMovimentacoes(familiaAtivaId);
+
   const [tabAtiva, setTabAtiva] = useState<TabTipoConta>("todas");
   const [modoExibicao, setModoExibicao] = useState<ModoExibicao>("lista");
   const [searchTerm, setSearchTerm] = useState("");
@@ -53,6 +58,10 @@ export default function ContasBancariasPage() {
 
   const [modalDeletarAberta, setModalDeletarAberta] = useState(false);
   const [contaParaDeletar, setContaParaDeletar] = useState<ContaBancaria | null>(null);
+
+  // Modal de Movimentação
+  const [modalMovimentacaoAberta, setModalMovimentacaoAberta] = useState(false);
+  const [contaParaMovimentacao, setContaParaMovimentacao] = useState<ContaBancaria | null>(null);
 
   // Filtragem por tipo e por busca de texto
   const contasFiltradas = useMemo(() => {
@@ -102,6 +111,18 @@ export default function ContasBancariasPage() {
   const handleDeletar = (conta: ContaBancaria) => {
     setContaParaDeletar(conta);
     setModalDeletarAberta(true);
+  };
+
+  const handleLancarMovimentacao = (conta?: ContaBancaria) => {
+    setContaParaMovimentacao(conta ?? null);
+    setModalMovimentacaoAberta(true);
+  };
+
+  // Submit de lançamento de movimentação
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleSalvarMovimentacao = async (payload: any) => {
+    await criarMovimentacao(payload);
+    setContaParaMovimentacao(null);
   };
 
   // Submit do formulário de criação/edição
@@ -182,13 +203,23 @@ export default function ContasBancariasPage() {
         </div>
 
         {contas.length > 0 && (
-          <Button
-            onClick={handleNovaConta}
-            className="rounded-[10px] bg-[#1F4E79] hover:bg-[#1F4E79]/90 text-white font-medium gap-2 shadow-2xs cursor-pointer"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Nova Conta</span>
-          </Button>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <Button
+              onClick={() => handleLancarMovimentacao()}
+              variant="outline"
+              className="rounded-[10px] border-[#1F4E79]/30 text-[#1F4E79] hover:bg-[#1F4E79]/10 font-medium gap-2 shadow-2xs cursor-pointer whitespace-nowrap"
+            >
+              <PlusCircle className="h-4 w-4 text-[#1F4E79]" />
+              <span>Nova Movimentação</span>
+            </Button>
+            <Button
+              onClick={handleNovaConta}
+              className="rounded-[10px] bg-[#1F4E79] hover:bg-[#1F4E79]/90 text-white font-medium gap-2 shadow-2xs cursor-pointer whitespace-nowrap"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Nova Conta</span>
+            </Button>
+          </div>
         )}
       </div>
 
@@ -350,6 +381,7 @@ export default function ContasBancariasPage() {
           ) : modoExibicao === "lista" ? (
             <ContasBancariasListView
               contas={contasFiltradas}
+              onLancarMovimentacao={handleLancarMovimentacao}
               onEditar={handleEditar}
               onDeletar={handleDeletar}
             />
@@ -359,6 +391,7 @@ export default function ContasBancariasPage() {
                 <ContaBancariaCard
                   key={conta.id}
                   conta={conta}
+                  onLancarMovimentacao={handleLancarMovimentacao}
                   onEditar={handleEditar}
                   onDeletar={handleDeletar}
                 />
@@ -383,6 +416,14 @@ export default function ContasBancariasPage() {
         conta={contaParaDeletar}
         onConfirm={handleConfirmarDeletar}
         isDeleting={isDeletando}
+      />
+
+      <MovimentacaoModal
+        open={modalMovimentacaoAberta}
+        onOpenChange={setModalMovimentacaoAberta}
+        contaBancariaIdPadrao={contaParaMovimentacao?.id}
+        onSalvar={handleSalvarMovimentacao}
+        familiaId={familiaAtivaId}
       />
     </div>
   );

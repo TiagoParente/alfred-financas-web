@@ -115,7 +115,7 @@ export function MetaDetalhesModal({
             <div className="py-8 text-center space-y-1">
               <p className="text-sm font-medium text-foreground">Nenhuma movimentação registrada</p>
               <p className="text-xs text-muted-foreground">
-                Utilize o botão "Aporte / Resgate" no card da meta para realizar sua primeira movimentação.
+                Utilize o botão &quot;Aporte / Resgate&quot; no card da meta para realizar sua primeira movimentação.
               </p>
             </div>
           ) : (

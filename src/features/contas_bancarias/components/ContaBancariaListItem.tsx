@@ -2,7 +2,7 @@
 
 import { ContaBancaria } from "@/types/contas";
 import { formatarMoeda } from "@/utils/formatters";
-import { Landmark, MoreVertical, Edit2, Trash2, ShieldAlert, Eye } from "lucide-react";
+import { Landmark, MoreVertical, Edit2, Trash2, ShieldAlert, Eye, PlusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -14,12 +14,14 @@ import { cn } from "@/lib/utils";
 
 interface ContaBancariaListItemProps {
   conta: ContaBancaria;
+  onLancarMovimentacao?: (conta: ContaBancaria) => void;
   onEditar: (conta: ContaBancaria) => void;
   onDeletar: (conta: ContaBancaria) => void;
 }
 
 export function ContaBancariaListItem({
   conta,
+  onLancarMovimentacao,
   onEditar,
   onDeletar,
 }: ContaBancariaListItemProps) {
@@ -114,7 +116,16 @@ export function ContaBancariaListItem({
           <DropdownMenuTrigger className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center hover:bg-accent cursor-pointer transition-colors">
             <MoreVertical className="h-4 w-4" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-36 rounded-xl">
+          <DropdownMenuContent align="end" className="min-w-[180px] rounded-xl">
+            {onLancarMovimentacao && (
+              <DropdownMenuItem
+                onClick={() => onLancarMovimentacao(conta)}
+                className="flex items-center gap-2 cursor-pointer"
+              >
+                <PlusCircle className="h-3.5 w-3.5 text-[#1F4E79] shrink-0" />
+                <span className="whitespace-nowrap">Nova Movimentação</span>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               onClick={() => onEditar(conta)}
               className="flex items-center gap-2 cursor-pointer"

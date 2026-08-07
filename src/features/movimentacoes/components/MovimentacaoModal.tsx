@@ -14,6 +14,8 @@ import {
   FileText,
   CreditCard as CreditCardIcon,
   Landmark,
+  HelpCircle,
+  Sparkles,
 } from "lucide-react";
 import {
   Dialog,
@@ -43,6 +45,8 @@ import {
 import { useContasBancarias } from "@/features/contas_bancarias/hooks/useContasBancarias";
 import { useCartoes } from "@/features/cartoes/hooks/useCartoes";
 import { useCategorias } from "@/features/categorias/hooks/useCategorias";
+import { ContaBancaria } from "@/types/contas";
+import { CartaoCredito } from "@/types/cartoes";
 import { cn } from "@/lib/utils";
 
 // ─── Helpers de formatação de moeda ───────────────────────────────────────────
@@ -144,6 +148,7 @@ interface MovimentacaoModalProps {
   onOpenChange: (open: boolean) => void;
   movimentacaoParaEditar?: Movimentacao | null;
   cartaoCreditoIdPadrao?: number | null;
+  contaBancariaIdPadrao?: number | null;
   onSalvar: (payload: CriarMovimentacaoPayload) => Promise<void>;
   familiaId?: number | null;
 }
@@ -155,6 +160,7 @@ export function MovimentacaoModal({
   onOpenChange,
   movimentacaoParaEditar,
   cartaoCreditoIdPadrao,
+  contaBancariaIdPadrao,
   onSalvar,
   familiaId,
 }: MovimentacaoModalProps) {
@@ -164,9 +170,8 @@ export function MovimentacaoModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [origemPagamento, setOrigemPagamento] = useState<"conta" | "cartao">("conta");
   const [valorDisplay, setValorDisplay] = useState("");
+  const [showInfoStatus, setShowInfoStatus] = useState(false);
   const descricaoRef = useRef<HTMLInputElement>(null);
-
-  const hoje = new Date().toISOString().split("T")[0];
 
   const {
     register,
@@ -188,8 +193,8 @@ export function MovimentacaoModal({
       cartao_credito_id: null,
       categoria_id: null,
       subcategoria_id: null,
-      data_movimentacao: hoje,
-      data_vencimento: hoje,
+      data_movimentacao: "",
+      data_vencimento: "",
       observacao: "",
     },
   });
@@ -247,23 +252,82 @@ export function MovimentacaoModal({
     [categorias, setValue]
   );
 
+  // ── Renderização com imagem do banco / ícone dos selects ──────────────────────
+  const renderContaOption = useCallback((conta: ContaBancaria) => {
+    const corBg = conta.cor_hex || "#1F4E79";
+    return (
+      <div className="flex items-center gap-2 min-w-0">
+        <div
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-white font-bold text-[10px] shadow-2xs overflow-hidden"
+          style={{ backgroundColor: corBg }}
+        >
+          {conta.banco?.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={conta.banco.logo_url}
+              alt={conta.banco.nome}
+              className="h-3.5 w-3.5 object-contain"
+            />
+          ) : (
+            <Landmark className="h-3 w-3 text-white" />
+          )}
+        </div>
+        <span className="font-medium text-xs truncate">{conta.nome}</span>
+        {conta.instituicao_financeira || conta.banco?.nome ? (
+          <span className="text-[10px] text-muted-foreground truncate hidden sm:inline">
+            • {conta.instituicao_financeira || conta.banco?.nome}
+          </span>
+        ) : null}
+      </div>
+    );
+  }, []);
+
+  const renderCartaoOption = useCallback((cartao: CartaoCredito) => {
+    const corBg = cartao.cor_hex || "#1F4E79";
+    return (
+      <div className="flex items-center gap-2 min-w-0">
+        <div
+          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-white font-bold text-[10px] shadow-2xs overflow-hidden"
+          style={{ backgroundColor: corBg }}
+        >
+          {cartao.banco?.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={cartao.banco.logo_url}
+              alt={cartao.banco.nome}
+              className="h-3.5 w-3.5 object-contain"
+            />
+          ) : (
+            <CreditCardIcon className="h-3 w-3 text-white" />
+          )}
+        </div>
+        <span className="font-medium text-xs truncate">{cartao.nome}</span>
+        {cartao.banco?.nome ? (
+          <span className="text-[10px] text-muted-foreground truncate hidden sm:inline">
+            • {cartao.banco.nome}
+          </span>
+        ) : null}
+      </div>
+    );
+  }, []);
+
   // ── Labels dos selects de conta/cartão ───────────────────────────────────────
   const labelConta = useCallback(
     (value: unknown) => {
       if (!value) return null;
       const found = contas.find((c) => c.id === Number(value));
-      return found ? found.nome : null;
+      return found ? renderContaOption(found) : null;
     },
-    [contas]
+    [contas, renderContaOption]
   );
 
   const labelCartao = useCallback(
     (value: unknown) => {
       if (!value) return null;
       const found = cartoes.find((c) => c.id === Number(value));
-      return found ? found.nome : null;
+      return found ? renderCartaoOption(found) : null;
     },
-    [cartoes]
+    [cartoes, renderCartaoOption]
   );
 
   const labelContaDestino = useCallback(
@@ -272,9 +336,9 @@ export function MovimentacaoModal({
       const found = contas.find(
         (c) => c.id === Number(value) && c.id !== contaBancariaIdSelecionada
       );
-      return found ? found.nome : null;
+      return found ? renderContaOption(found) : null;
     },
-    [contas, contaBancariaIdSelecionada]
+    [contas, contaBancariaIdSelecionada, renderContaOption]
   );
 
   // ── Foco automático na descrição quando o modal abre ─────────────────────────
@@ -290,6 +354,7 @@ export function MovimentacaoModal({
   // ── Reset do formulário ao abrir ─────────────────────────────────────────────
   useEffect(() => {
     if (open) {
+      const hoje = new Date().toISOString().split("T")[0];
       if (movimentacaoParaEditar) {
         const usaCartao = Boolean(movimentacaoParaEditar.cartao_credito_id);
         setOrigemPagamento(usaCartao ? "cartao" : "conta");
@@ -330,6 +395,23 @@ export function MovimentacaoModal({
           observacao: "",
         });
         setValorDisplay("");
+      } else if (contaBancariaIdPadrao) {
+        setOrigemPagamento("conta");
+        reset({
+          descricao: "",
+          valor: undefined,
+          tipo: TipoMovimentacao.DESPESA,
+          status: StatusMovimentacao.PAGO,
+          conta_bancaria_id: contaBancariaIdPadrao,
+          conta_bancaria_destino_id: null,
+          cartao_credito_id: null,
+          categoria_id: null,
+          subcategoria_id: null,
+          data_movimentacao: hoje,
+          data_vencimento: hoje,
+          observacao: "",
+        });
+        setValorDisplay("");
       } else {
         setOrigemPagamento("conta");
         reset({
@@ -349,7 +431,15 @@ export function MovimentacaoModal({
         setValorDisplay("");
       }
     }
-  }, [open, movimentacaoParaEditar, cartaoCreditoIdPadrao, reset, contas, cartoes, hoje]);
+  }, [
+    open,
+    movimentacaoParaEditar,
+    cartaoCreditoIdPadrao,
+    contaBancariaIdPadrao,
+    reset,
+    contas,
+    cartoes,
+  ]);
 
   // Alternar Origem de Pagamento
   const handleTrocarOrigemPagamento = (origem: "conta" | "cartao") => {
@@ -549,7 +639,7 @@ export function MovimentacaoModal({
                   <SelectContent className="rounded-xl">
                     {cartoes.map((c) => (
                       <SelectItem key={c.id} value={String(c.id)} label={c.nome}>
-                        {c.nome} ({c.banco?.nome ?? "Cartão"})
+                        {renderCartaoOption(c)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -580,7 +670,7 @@ export function MovimentacaoModal({
                   <SelectContent className="rounded-xl">
                     {contas.map((c) => (
                       <SelectItem key={c.id} value={String(c.id)} label={c.nome}>
-                        {c.nome}
+                        {renderContaOption(c)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -615,7 +705,7 @@ export function MovimentacaoModal({
                       .filter((c) => c.id !== contaBancariaIdSelecionada)
                       .map((c) => (
                         <SelectItem key={c.id} value={String(c.id)} label={c.nome}>
-                          {c.nome}
+                          {renderContaOption(c)}
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -649,8 +739,8 @@ export function MovimentacaoModal({
           </div>
 
           {/* Data e Status */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-end">
-            <div className="space-y-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
+            <div className="space-y-1.5 sm:col-span-1">
               <Label className="text-xs font-semibold">Data da Movimentação</Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -667,29 +757,67 @@ export function MovimentacaoModal({
               )}
             </div>
 
-            {/* Toggle Pago / Pendente */}
-            <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 flex items-center justify-between gap-3">
-              <div className="space-y-0.5 min-w-0">
-                <p className="text-xs font-semibold truncate">
-                  {statusSelecionado === StatusMovimentacao.PAGO
-                    ? "Já foi realizada / paga"
-                    : "Pendente (Na Fatura / A Vencer)"}
-                </p>
-                <p className="text-[10px] text-muted-foreground">
-                  {statusSelecionado === StatusMovimentacao.PAGO
-                    ? "Impacta o saldo imediatamente"
-                    : "Será contabilizada na fatura do cartão"}
-                </p>
+            {/* Toggle Pago / Pendente e Explicação */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold">Status da Movimentação</Label>
+                {tipoSelecionado === TipoMovimentacao.DESPESA && origemPagamento === "cartao" && (
+                  <button
+                    type="button"
+                    onClick={() => setShowInfoStatus((prev) => !prev)}
+                    className="inline-flex items-center gap-1 text-[11px] text-[#1F4E79] hover:underline font-medium cursor-pointer"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                    <span>Como funciona no cartão?</span>
+                  </button>
+                )}
               </div>
-              <Switch
-                checked={statusSelecionado === StatusMovimentacao.PAGO}
-                onCheckedChange={(checked) =>
-                  setValue(
-                    "status",
-                    checked ? StatusMovimentacao.PAGO : StatusMovimentacao.PENDENTE
-                  )
-                }
-              />
+
+              <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 flex items-center justify-between gap-3">
+                <div className="space-y-0.5 min-w-0">
+                  <p className="text-xs font-semibold truncate">
+                    {statusSelecionado === StatusMovimentacao.PAGO
+                      ? "Já foi realizada / paga"
+                      : "Pendente (Na Fatura / A Vencer)"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {tipoSelecionado === TipoMovimentacao.DESPESA && origemPagamento === "cartao"
+                      ? statusSelecionado === StatusMovimentacao.PAGO
+                        ? "Para lançamentos retroativos de faturas já quitadas"
+                        : "Acumula na fatura em aberto (sem débito em conta agora)"
+                      : statusSelecionado === StatusMovimentacao.PAGO
+                      ? "Impacta o saldo da conta imediatamente"
+                      : "Agendado / Entrará no relatório de pendências"}
+                  </p>
+                </div>
+                <Switch
+                  checked={statusSelecionado === StatusMovimentacao.PAGO}
+                  onCheckedChange={(checked) =>
+                    setValue(
+                      "status",
+                      checked ? StatusMovimentacao.PAGO : StatusMovimentacao.PENDENTE
+                    )
+                  }
+                />
+              </div>
+
+              {/* Card Explicativo (Alfred Insight) */}
+              {showInfoStatus && tipoSelecionado === TipoMovimentacao.DESPESA && origemPagamento === "cartao" && (
+                <div className="p-3.5 rounded-2xl bg-accent/40 border border-border/60 space-y-2 text-xs text-muted-foreground animate-in fade-in duration-200">
+                  <div className="flex items-center gap-1.5 text-[#1F4E79] font-semibold text-xs">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Entenda o status no Cartão de Crédito</span>
+                  </div>
+                  <div className="space-y-1.5 text-[11px] leading-relaxed">
+                    <p>
+                      <strong className="text-foreground font-semibold">• Pendente (Padrão):</strong> A compra é registrada na <strong>fatura aberta</strong> do cartão. Não reduz o saldo da sua conta bancária agora e entra na previsão de contas a pagar.
+                    </p>
+                    <p>
+                      <strong className="text-foreground font-semibold">• Pago:</strong> Use apenas se estiver lançando uma compra <strong>retroativa de uma fatura que você já pagou no passado</strong>, garantindo que o histórico fique correto sem gerar pendências acumuladas.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

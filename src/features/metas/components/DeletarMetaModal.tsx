@@ -46,7 +46,7 @@ export function DeletarMetaModal({
           </DialogTitle>
           <DialogDescription className="text-xs text-center text-muted-foreground leading-relaxed">
             Você tem certeza que deseja remover a meta{" "}
-            <strong className="text-foreground">"{meta.nome}"</strong> com saldo acumulado de{" "}
+            <strong className="text-foreground">&quot;{meta.nome}&quot;</strong> com saldo acumulado de{" "}
             <strong className="text-foreground">{formatarMoeda(meta.valor_atual)}</strong>?
             Esta ação não afetará os saldos das suas contas bancárias.
           </DialogDescription>
