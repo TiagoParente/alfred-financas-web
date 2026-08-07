@@ -10,6 +10,7 @@ import {
   CreditCard,
   Target,
   CalendarSync,
+  PieChart,
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -64,6 +65,12 @@ const navItems: NavItem[] = [
     titulo: "Metas & Reservas",
     href: "/metas",
     icone: Target,
+    ativo: true,
+  },
+  {
+    titulo: "Orçamentos",
+    href: "/orcamentos",
+    icone: PieChart,
     ativo: true,
   },
 ];
