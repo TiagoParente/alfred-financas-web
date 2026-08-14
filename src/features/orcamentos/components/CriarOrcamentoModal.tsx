@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { categoriaService } from "@/services/categorias";
+import { useCategorias } from "@/features/categorias/hooks/useCategorias";
+import { ComboboxCategoria } from "@/features/movimentacoes/components/ComboboxCategoria";
 import { orcamentosService } from "@/services/orcamentos";
-import { Categoria, TipoCategoria } from "@/types/categorias";
+import { TipoCategoria } from "@/types/categorias";
 import { CriarOrcamentoPayload } from "@/types/orcamento";
 import {
   Dialog,
@@ -50,37 +51,46 @@ export function CriarOrcamentoModal({
   anoPadrao,
   onSucesso,
 }: CriarOrcamentoModalProps) {
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const { categorias, isLoading: loadingCategorias } = useCategorias(undefined, {
+    tipo: TipoCategoria.DESPESA,
+  });
+
   const [categoriaId, setCategoriaId] = useState<string>("");
   const [mes, setMes] = useState<number>(mesPadrao);
   const [ano, setAno] = useState<number>(anoPadrao);
   const [valorLimite, setValorLimite] = useState<string>("");
   const [observacao, setObservacao] = useState<string>("");
 
-  const [loadingCategorias, setLoadingCategorias] = useState<boolean>(false);
   const [salvando, setSalvando] = useState<boolean>(false);
 
   useEffect(() => {
     if (open) {
       setMes(mesPadrao);
       setAno(anoPadrao);
-      carregarCategorias();
+      resetForm();
     }
   }, [open, mesPadrao, anoPadrao]);
 
-  const carregarCategorias = async () => {
-    try {
-      setLoadingCategorias(true);
-      const data = await categoriaService.listar(undefined, { tipo: TipoCategoria.DESPESA });
-      setCategorias(data);
-    } catch {
-      toast.add({
-        title: "Erro",
-        description: "Erro ao carregar categorias de despesa.",
-        type: "error",
-      });
-    } finally {
-      setLoadingCategorias(false);
+  const valorCategoriaSelecionada = categoriaId ? `cat:${categoriaId}` : undefined;
+
+  const handleCategoriaChange = (valor: string | null) => {
+    if (!valor) {
+      setCategoriaId("");
+      return;
+    }
+    if (valor.startsWith("cat:")) {
+      setCategoriaId(valor.slice(4));
+    } else if (valor.startsWith("sub:")) {
+      const subId = parseInt(valor.slice(4), 10);
+      let parentCatId: number | null = null;
+      for (const cat of categorias) {
+        const sub = cat.subcategorias?.find((s) => Number(s.id) === subId);
+        if (sub) {
+          parentCatId = Number(sub.categoria_id || cat.id);
+          break;
+        }
+      }
+      setCategoriaId(parentCatId ? parentCatId.toString() : "");
     }
   };
 
@@ -163,24 +173,13 @@ export function CriarOrcamentoModal({
           {/* Categoria */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold">Categoria de Despesa</Label>
-            {loadingCategorias ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
-                <Loader2 className="h-4 w-4 animate-spin" /> Carregando categorias...
-              </div>
-            ) : (
-              <Select value={categoriaId} onValueChange={(val) => setCategoriaId(val ?? "")}>
-                <SelectTrigger className="rounded-[10px]">
-                  <SelectValue placeholder="Selecione a categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categorias.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id.toString()}>
-                      {cat.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <ComboboxCategoria
+              categorias={categorias}
+              valorSelecionado={valorCategoriaSelecionada}
+              onChange={handleCategoriaChange}
+              placeholder="Buscar categoria..."
+              disabled={loadingCategorias}
+            />
           </div>
 
           {/* Mês e Ano */}
@@ -189,7 +188,9 @@ export function CriarOrcamentoModal({
               <Label className="text-xs font-semibold">Mês</Label>
               <Select value={mes.toString()} onValueChange={(val) => setMes(val ? parseInt(val, 10) : mesPadrao)}>
                 <SelectTrigger className="rounded-[10px]">
-                  <SelectValue />
+                  <SelectValue placeholder="Selecione o mês">
+                    {MESES.find((m) => m.value === mes)?.label}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   {MESES.map((m) => (

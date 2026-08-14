@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useFamilias } from "@/features/familias/hooks/useFamilias";
 import { Users, Plus, Check } from "lucide-react";
 import {
@@ -87,8 +88,25 @@ export function FamiliaSelector() {
 
       <Dialog open={modalAberta} onOpenChange={setModalAberta}>
         <DialogContent className="sm:max-w-[425px] rounded-[20px]">
-          <DialogHeader>
-            <DialogTitle>Criar Nova Família</DialogTitle>
+          <DialogHeader className="flex flex-col items-center gap-3 pb-2">
+            <div className="relative h-20 w-20 overflow-hidden rounded-full ring-4 ring-[#1F4E79]/15 shadow-lg">
+              <Image
+                src="/images/brand/alfred.png"
+                alt="Alfred"
+                fill
+                className="object-cover object-top"
+                sizes="80px"
+                priority
+              />
+            </div>
+            <div className="text-center space-y-0.5">
+              <DialogTitle className="text-lg font-bold text-foreground">
+                Criar Nova Família
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground">
+                Dê um nome ao seu grupo familiar.
+              </p>
+            </div>
           </DialogHeader>
           <form onSubmit={handleCriarFamilia} className="space-y-4 py-2">
             <div className="space-y-2">

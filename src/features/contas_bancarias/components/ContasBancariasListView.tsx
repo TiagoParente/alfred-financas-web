@@ -5,6 +5,7 @@ import { ContaBancariaListItem } from "./ContaBancariaListItem";
 
 interface ContasBancariasListViewProps {
   contas: ContaBancaria[];
+  onVerPainel?: (conta: ContaBancaria) => void;
   onLancarMovimentacao?: (conta: ContaBancaria) => void;
   onEditar: (conta: ContaBancaria) => void;
   onDeletar: (conta: ContaBancaria) => void;
@@ -12,6 +13,7 @@ interface ContasBancariasListViewProps {
 
 export function ContasBancariasListView({
   contas,
+  onVerPainel,
   onLancarMovimentacao,
   onEditar,
   onDeletar,
@@ -27,6 +29,7 @@ export function ContasBancariasListView({
           <ContaBancariaListItem
             key={conta.id}
             conta={conta}
+            onVerPainel={onVerPainel}
             onLancarMovimentacao={onLancarMovimentacao}
             onEditar={onEditar}
             onDeletar={onDeletar}

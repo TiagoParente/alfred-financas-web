@@ -1,8 +1,10 @@
 "use client";
 
 import { useLogout } from "@/hooks/useAuth";
+import { usePerfil } from "@/features/perfil/hooks/usePerfil";
 import { FamiliaSelector } from "./FamiliaSelector";
-import { LogOut, Wallet } from "lucide-react";
+import { Logo } from "./Logo";
+import { LogOut, Settings } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,50 +14,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useState } from "react";
 import Link from "next/link";
 
 export function Header() {
   const logout = useLogout();
-  const [usuario] = useState<{ nome: string; email: string } | null>(() => {
-    if (typeof window !== "undefined") {
-      const savedUser = localStorage.getItem("alfred_user");
-      if (savedUser) {
-        try {
-          return JSON.parse(savedUser);
-        } catch {
-          return null;
-        }
-      }
-    }
-    return null;
-  });
+  const { usuario } = usePerfil();
 
   const iniciais = usuario?.nome
     ? usuario.nome
-        .split(" ")
-        .map((n) => n[0])
-        .slice(0, 2)
-        .join("")
-        .toUpperCase()
+      .split(" ")
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase()
     : "A";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-border/40 bg-background/80 px-4 md:px-6 backdrop-blur-md">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1F4E79] text-white shadow-sm">
-            <Wallet className="h-5 w-5" />
-          </div>
-          <div className="hidden sm:block">
-            <span className="text-base font-bold text-foreground tracking-tight">
-              Alfred
-            </span>
-            <span className="ml-1 text-xs font-medium text-[#1F4E79]">
-              Finanças
-            </span>
-          </div>
-        </Link>
+        <Logo variant="header" showLink href="/dashboard" />
       </div>
 
       <div className="flex items-center gap-3">
@@ -75,11 +52,19 @@ export function Header() {
                 <p className="text-sm font-medium leading-none text-foreground">
                   {usuario?.nome || "Usuário Alfred"}
                 </p>
-                <p className="text-xs leading-none text-muted-foreground">
+                <p className="text-xs leading-none text-muted-foreground truncate">
                   {usuario?.email || ""}
                 </p>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer p-0">
+              <Link href="/configuracoes" className="flex w-full items-center gap-2 px-1.5 py-1">
+                <Settings className="h-4 w-4" />
+                <span>Configurações</span>
+              </Link>
+            </DropdownMenuItem>
+
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => logout()}
@@ -94,3 +79,4 @@ export function Header() {
     </header>
   );
 }
+

@@ -2,7 +2,7 @@
 
 import { ContaBancaria } from "@/types/contas";
 import { formatarMoeda } from "@/utils/formatters";
-import { Landmark, MoreVertical, Edit2, Trash2, ShieldAlert, Eye, PlusCircle } from "lucide-react";
+import { Landmark, MoreVertical, Edit2, Trash2, ShieldAlert, Eye, PlusCircle, BarChart3 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 interface ContaBancariaListItemProps {
   conta: ContaBancaria;
+  onVerPainel?: (conta: ContaBancaria) => void;
   onLancarMovimentacao?: (conta: ContaBancaria) => void;
   onEditar: (conta: ContaBancaria) => void;
   onDeletar: (conta: ContaBancaria) => void;
@@ -21,6 +22,7 @@ interface ContaBancariaListItemProps {
 
 export function ContaBancariaListItem({
   conta,
+  onVerPainel,
   onLancarMovimentacao,
   onEditar,
   onDeletar,
@@ -30,7 +32,10 @@ export function ContaBancariaListItem({
   return (
     <div className="group rounded-xl border border-border/40 bg-card p-3 sm:px-4 sm:py-3 transition-all duration-200 hover:border-border/80 hover:shadow-2xs flex items-center justify-between gap-3">
       {/* Lado Esquerdo: Logo/Ícone + Nome + Informações */}
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div
+        onClick={() => onVerPainel?.(conta)}
+        className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer group-hover:opacity-90 transition-opacity"
+      >
         {/* Logo/Avatar do Banco */}
         <div
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white font-bold text-sm shadow-2xs transition-transform duration-200 group-hover:scale-105"
@@ -51,7 +56,7 @@ export function ContaBancariaListItem({
         {/* Nome e Badges de Identificação */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-semibold text-foreground text-sm truncate">
+            <span className="font-semibold text-foreground text-sm truncate group-hover:text-[#1F4E79] dark:group-hover:text-blue-400 transition-colors">
               {conta.nome}
             </span>
 
@@ -117,12 +122,21 @@ export function ContaBancariaListItem({
             <MoreVertical className="h-4 w-4" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[180px] rounded-xl">
+            {onVerPainel && (
+              <DropdownMenuItem
+                onClick={() => onVerPainel(conta)}
+                className="flex items-center gap-2 cursor-pointer font-medium text-[#1F4E79] dark:text-blue-400"
+              >
+                <BarChart3 className="h-3.5 w-3.5 text-[#1F4E79] dark:text-blue-400 shrink-0" />
+                <span>Painel da Conta</span>
+              </DropdownMenuItem>
+            )}
             {onLancarMovimentacao && (
               <DropdownMenuItem
                 onClick={() => onLancarMovimentacao(conta)}
                 className="flex items-center gap-2 cursor-pointer"
               >
-                <PlusCircle className="h-3.5 w-3.5 text-[#1F4E79] shrink-0" />
+                <PlusCircle className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <span className="whitespace-nowrap">Nova Movimentação</span>
               </DropdownMenuItem>
             )}

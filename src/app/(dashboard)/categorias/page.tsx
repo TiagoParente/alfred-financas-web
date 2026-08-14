@@ -7,6 +7,7 @@ import { Categoria, Subcategoria, TipoCategoria } from "@/types/categorias";
 import { CategoriaCard } from "@/features/categorias/components/CategoriaCard";
 import { CategoriasListView } from "@/features/categorias/components/CategoriasListView";
 import { CategoriaModal, CategoriaFormData } from "@/features/categorias/components/CategoriaModal";
+import { SubcategoriaModal } from "@/features/categorias/components/SubcategoriaModal";
 import { DeletarCategoriaModal } from "@/features/categorias/components/DeletarCategoriaModal";
 import { DeletarSubcategoriaModal } from "@/features/categorias/components/DeletarSubcategoriaModal";
 import { CategoriasSkeleton } from "@/features/categorias/components/CategoriasSkeleton";
@@ -15,7 +16,6 @@ import {
   Plus,
   RefreshCw,
   AlertCircle,
-  Download,
   Tag,
   Search,
   LayoutList,
@@ -44,8 +44,6 @@ export default function CategoriasPage() {
     isLoading,
     isError,
     refetch,
-    importarPadroes,
-    isImportandoPadroes,
     criarCategoria,
     isCriandoCategoria,
     atualizarCategoria,
@@ -54,9 +52,11 @@ export default function CategoriasPage() {
     isDeletandoCategoria,
     criarSubcategoria,
     isCriandoSubcategoria,
+    atualizarSubcategoria,
+    isAtualizandoSubcategoria,
     deletarSubcategoria,
     isDeletandoSubcategoria,
-  } = useCategorias(familiaAtivaId, { incluirSistema: true });
+  } = useCategorias(familiaAtivaId);
 
   const [modalFormAberta, setModalFormAberta] = useState(false);
   const [categoriaEmEdicao, setCategoriaEmEdicao] = useState<Categoria | null>(null);
@@ -66,6 +66,9 @@ export default function CategoriasPage() {
 
   const [modalDeletarSubAberta, setModalDeletarSubAberta] = useState(false);
   const [subcategoriaParaDeletar, setSubcategoriaParaDeletar] = useState<Subcategoria | null>(null);
+
+  const [modalEditarSubAberta, setModalEditarSubAberta] = useState(false);
+  const [subcategoriaEmEdicao, setSubcategoriaEmEdicao] = useState<Subcategoria | null>(null);
 
   // Estatísticas Rápidas
   const stats = useMemo(() => {
@@ -124,8 +127,19 @@ export default function CategoriasPage() {
     setModalDeletarSubAberta(true);
   };
 
-  const handleImportarPadroes = async () => {
-    await importarPadroes();
+  const handleEditarSubcategoria = (subcategoria: Subcategoria) => {
+    setSubcategoriaEmEdicao(subcategoria);
+    setModalEditarSubAberta(true);
+  };
+
+  const handleConfirmarEditarSubcategoria = async (
+    subcategoriaId: number,
+    payload: { nome: string; categoria_id: number }
+  ) => {
+    await atualizarSubcategoria({
+      subcategoriaId,
+      payload,
+    });
   };
 
   const handleSubmitForm = async (formData: CategoriaFormData) => {
@@ -206,21 +220,11 @@ export default function CategoriasPage() {
             Categorias & Subcategorias
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Organize suas receitas e despesas com categorias personalizadas ou do sistema.
+            Organize suas receitas e despesas com categorias personalizadas.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <Button
-            onClick={handleImportarPadroes}
-            disabled={isImportandoPadroes}
-            variant="outline"
-            className="rounded-[10px] border-border/60 hover:bg-accent text-foreground font-medium gap-2 shadow-2xs cursor-pointer"
-          >
-            <Download className="h-4 w-4 text-[#1F4E79]" />
-            <span>{isImportandoPadroes ? "Importando..." : "Importar Padrões"}</span>
-          </Button>
-
           <Button
             onClick={handleNovaCategoria}
             className="rounded-[10px] bg-[#1F4E79] hover:bg-[#1F4E79]/90 text-white font-medium gap-2 shadow-2xs cursor-pointer"
@@ -235,8 +239,6 @@ export default function CategoriasPage() {
       {categorias.length === 0 ? (
         <CategoriasEmptyState
           onNovaCategoria={handleNovaCategoria}
-          onImportarPadroes={handleImportarPadroes}
-          isImportando={isImportandoPadroes}
         />
       ) : (
         <div className="space-y-5">
@@ -418,6 +420,7 @@ export default function CategoriasPage() {
               onEditar={handleEditar}
               onDeletar={handleDeletarCategoria}
               onCriarSubcategoria={handleCriarSubcategoria}
+              onEditarSubcategoria={handleEditarSubcategoria}
               onDeletarSubcategoria={handleDeletarSubcategoria}
               isCriandoSubcategoria={isCriandoSubcategoria}
             />
@@ -430,6 +433,7 @@ export default function CategoriasPage() {
                   onEditar={handleEditar}
                   onDeletar={handleDeletarCategoria}
                   onCriarSubcategoria={handleCriarSubcategoria}
+                  onEditarSubcategoria={handleEditarSubcategoria}
                   onDeletarSubcategoria={handleDeletarSubcategoria}
                   isCriandoSubcategoria={isCriandoSubcategoria}
                 />
@@ -446,6 +450,15 @@ export default function CategoriasPage() {
         categoriaEmEdicao={categoriaEmEdicao}
         onSubmit={handleSubmitForm}
         isSubmitting={isCriandoCategoria || isAtualizandoCategoria}
+      />
+
+      <SubcategoriaModal
+        open={modalEditarSubAberta}
+        onOpenChange={setModalEditarSubAberta}
+        subcategoria={subcategoriaEmEdicao}
+        categorias={categorias}
+        onSubmit={handleConfirmarEditarSubcategoria}
+        isSubmitting={isAtualizandoSubcategoria}
       />
 
       <DeletarCategoriaModal

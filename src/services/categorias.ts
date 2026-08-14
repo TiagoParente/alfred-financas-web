@@ -1,6 +1,7 @@
 import { api } from "@/lib/api";
 import {
   AtualizarCategoriaPayload,
+  AtualizarSubcategoriaPayload,
   Categoria,
   CriarCategoriaPayload,
   CriarSubcategoriaPayload,
@@ -9,7 +10,6 @@ import {
 } from "@/types/categorias";
 
 export interface ListarCategoriasParams {
-  incluirSistema?: boolean;
   tipo?: TipoCategoria;
 }
 
@@ -27,10 +27,7 @@ export const categoriaService = {
       headers["X-Familia-Id"] = familiaId.toString();
     }
 
-    const queryParams: Record<string, string | boolean> = {};
-    if (params?.incluirSistema !== undefined) {
-      queryParams.incluir_sistema = params.incluirSistema;
-    }
+    const queryParams: Record<string, string> = {};
     if (params?.tipo) {
       queryParams.tipo = params.tipo;
     }
@@ -41,29 +38,6 @@ export const categoriaService = {
     });
 
     return data.data;
-  },
-
-  /**
-   * Importa o catálogo de categorias e subcategorias padrão do sistema.
-   * POST /v1/categorias/importar-padroes
-   */
-  async importarPadroes(
-    familiaId?: number
-  ): Promise<{ quantidade: number; message: string }> {
-    const headers: Record<string, string> = {};
-    if (familiaId) {
-      headers["X-Familia-Id"] = familiaId.toString();
-    }
-
-    const { data } = await api.post<{
-      data: { quantidade: number };
-      message: string;
-    }>("/v1/categorias/importar-padroes", {}, { headers });
-
-    return {
-      quantidade: data.data.quantidade,
-      message: data.message,
-    };
   },
 
   /**
@@ -130,6 +104,21 @@ export const categoriaService = {
   ): Promise<Subcategoria> {
     const { data } = await api.post<{ data: Subcategoria }>(
       `/v1/categorias/${categoriaId}/subcategorias`,
+      payload
+    );
+    return data.data;
+  },
+
+  /**
+   * Atualiza uma subcategoria (nome e/ou categoria pai).
+   * PUT /v1/subcategorias/{subcategoriaId}
+   */
+  async atualizarSubcategoria(
+    subcategoriaId: number,
+    payload: AtualizarSubcategoriaPayload
+  ): Promise<Subcategoria> {
+    const { data } = await api.put<{ data: Subcategoria }>(
+      `/v1/subcategorias/${subcategoriaId}`,
       payload
     );
     return data.data;

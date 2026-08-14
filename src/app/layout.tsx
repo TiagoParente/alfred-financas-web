@@ -17,6 +17,11 @@ export const metadata: Metadata = {
   description:
     "Plataforma de inteligência financeira pessoal e familiar. Organize, controle e planeje suas finanças com clareza.",
   keywords: ["finanças", "gestão financeira", "controle financeiro", "família"],
+  icons: {
+    icon: "/images/brand/logomarca_small.png",
+    shortcut: "/images/brand/logomarca_small.png",
+    apple: "/images/brand/logomarca_small.png",
+  },
 };
 
 export default function RootLayout({

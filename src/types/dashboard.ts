@@ -34,6 +34,32 @@ export interface AlfredInsights {
   nivel_alerta: "normal" | "atencao" | "critico";
 }
 
+export interface ContaEvolucaoSaldo {
+  id: number;
+  nome: string;
+  saldo: number;
+  cor_hex: string | null;
+}
+
+export interface HistoricoInvestimentoItem {
+  mes: number;
+  ano: number;
+  mes_ano: string;
+  entradas: number;
+  saidas: number;
+  saldo_liquido: number;
+  saldo_total: number;
+  total: number;
+  contas: ContaEvolucaoSaldo[];
+}
+
+export interface EvolucaoInvestimentosResumo {
+  variacao_valor: number;
+  variacao_percentual: number;
+  tendencia: "subiu" | "desceu" | "estavel";
+  historico: HistoricoInvestimentoItem[];
+}
+
 export interface DashboardData {
   familia_nome: string;
   saldos: DashboardSaldos;
@@ -43,5 +69,6 @@ export interface DashboardData {
   orcamentos: Orcamento[];
   resumo_metas: ResumoReservas;
   metas: Meta[];
+  evolucao_investimentos?: EvolucaoInvestimentosResumo;
   alfred_insights: AlfredInsights;
 }

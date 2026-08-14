@@ -7,6 +7,7 @@ import {
 } from "@/services/categorias";
 import {
   AtualizarCategoriaPayload,
+  AtualizarSubcategoriaPayload,
   CriarCategoriaPayload,
   CriarSubcategoriaPayload,
 } from "@/types/categorias";
@@ -19,7 +20,6 @@ export function useCategorias(
   const queryKey = [
     "categorias",
     familiaId,
-    params?.incluirSistema ?? true,
     params?.tipo ?? "todos",
   ];
 
@@ -33,17 +33,9 @@ export function useCategorias(
     queryKey,
     queryFn: () =>
       categoriaService.listar(familiaId ?? undefined, {
-        incluirSistema: params?.incluirSistema ?? true,
         tipo: params?.tipo,
       }),
     enabled: true,
-  });
-
-  const importarPadroesMutation = useMutation({
-    mutationFn: () => categoriaService.importarPadroes(familiaId ?? undefined),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categorias"] });
-    },
   });
 
   const criarCategoriaMutation = useMutation({
@@ -87,6 +79,19 @@ export function useCategorias(
     },
   });
 
+  const atualizarSubcategoriaMutation = useMutation({
+    mutationFn: ({
+      subcategoriaId,
+      payload,
+    }: {
+      subcategoriaId: number;
+      payload: AtualizarSubcategoriaPayload;
+    }) => categoriaService.atualizarSubcategoria(subcategoriaId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categorias"] });
+    },
+  });
+
   const deletarSubcategoriaMutation = useMutation({
     mutationFn: (subcategoriaId: number) =>
       categoriaService.deletarSubcategoria(subcategoriaId),
@@ -101,8 +106,6 @@ export function useCategorias(
     isError,
     error,
     refetch,
-    importarPadroes: importarPadroesMutation.mutateAsync,
-    isImportandoPadroes: importarPadroesMutation.isPending,
     criarCategoria: criarCategoriaMutation.mutateAsync,
     isCriandoCategoria: criarCategoriaMutation.isPending,
     atualizarCategoria: atualizarCategoriaMutation.mutateAsync,
@@ -111,6 +114,8 @@ export function useCategorias(
     isDeletandoCategoria: deletarCategoriaMutation.isPending,
     criarSubcategoria: criarSubcategoriaMutation.mutateAsync,
     isCriandoSubcategoria: criarSubcategoriaMutation.isPending,
+    atualizarSubcategoria: atualizarSubcategoriaMutation.mutateAsync,
+    isAtualizandoSubcategoria: atualizarSubcategoriaMutation.isPending,
     deletarSubcategoria: deletarSubcategoriaMutation.mutateAsync,
     isDeletandoSubcategoria: deletarSubcategoriaMutation.isPending,
   };

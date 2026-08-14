@@ -37,6 +37,7 @@ export function useDashboard(
     orcamentos: data?.orcamentos ?? [],
     resumoMetas: data?.resumo_metas,
     metas: data?.metas ?? [],
+    evolucaoInvestimentos: data?.evolucao_investimentos,
     alfredInsights: data?.alfred_insights,
     isLoading,
     isError,

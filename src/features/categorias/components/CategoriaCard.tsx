@@ -12,13 +12,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import * as Icons from "lucide-react";
-import { MoreVertical, Plus, Trash2, Edit2, Lock, Tag } from "lucide-react";
+import { MoreVertical, Plus, Trash2, Edit2, Tag } from "lucide-react";
 
 interface CategoriaCardProps {
   categoria: Categoria;
   onEditar: (categoria: Categoria) => void;
   onDeletar: (categoria: Categoria) => void;
   onCriarSubcategoria: (categoriaId: number, nome: string) => Promise<void>;
+  onEditarSubcategoria: (subcategoria: Subcategoria) => void;
   onDeletarSubcategoria: (subcategoria: Subcategoria) => void;
   isCriandoSubcategoria?: boolean;
 }
@@ -42,6 +43,7 @@ export function CategoriaCard({
   onEditar,
   onDeletar,
   onCriarSubcategoria,
+  onEditarSubcategoria,
   onDeletarSubcategoria,
   isCriandoSubcategoria = false,
 }: CategoriaCardProps) {
@@ -92,50 +94,32 @@ export function CategoriaCard({
               >
                 {categoria.tipo_label}
               </Badge>
-
-              {categoria.e_do_sistema ? (
-                <Badge
-                  variant="secondary"
-                  className="text-[9px] px-1.5 py-0 h-4 bg-accent/60 text-muted-foreground gap-0.5"
-                >
-                  <Lock className="h-2.5 w-2.5" /> Sistema
-                </Badge>
-              ) : (
-                <Badge
-                  variant="outline"
-                  className="text-[9px] px-1.5 py-0 h-4 border-border/60 text-muted-foreground"
-                >
-                  Personalizada
-                </Badge>
-              )}
             </div>
           </div>
         </div>
 
-        {/* Menu de Ações (Apenas se não for do sistema) */}
-        {!categoria.e_do_sistema && (
-          <DropdownMenu>
-            <DropdownMenuTrigger className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center hover:bg-accent cursor-pointer transition-colors">
-              <MoreVertical className="h-3.5 w-3.5" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="rounded-xl">
-              <DropdownMenuItem
-                onClick={() => onEditar(categoria)}
-                className="gap-2 cursor-pointer"
-              >
-                <Edit2 className="h-4 w-4 text-muted-foreground" />
-                <span>Editar Categoria</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => onDeletar(categoria)}
-                className="gap-2 text-red-600 dark:text-red-400 focus:text-red-600 cursor-pointer"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>Excluir Categoria</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        {/* Menu de Ações */}
+        <DropdownMenu>
+          <DropdownMenuTrigger className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground flex items-center justify-center hover:bg-accent cursor-pointer transition-colors">
+            <MoreVertical className="h-3.5 w-3.5" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="rounded-xl">
+            <DropdownMenuItem
+              onClick={() => onEditar(categoria)}
+              className="gap-2 cursor-pointer"
+            >
+              <Edit2 className="h-4 w-4 text-muted-foreground" />
+              <span>Editar Categoria</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => onDeletar(categoria)}
+              className="gap-2 text-red-600 dark:text-red-400 focus:text-red-600 cursor-pointer"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Excluir Categoria</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Seção de Subcategorias */}
@@ -205,14 +189,24 @@ export function CategoriaCard({
                 className="group flex items-center gap-1.5 rounded-lg bg-accent/40 px-2.5 py-1 text-xs text-foreground transition-colors hover:bg-accent"
               >
                 <span>{sub.nome}</span>
-                <button
-                  type="button"
-                  onClick={() => onDeletarSubcategoria(sub)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-500"
-                  title="Excluir subcategoria"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => onEditarSubcategoria(sub)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground cursor-pointer"
+                    title="Editar ou mover subcategoria"
+                  >
+                    <Edit2 className="h-3 w-3" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onDeletarSubcategoria(sub)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-red-500 cursor-pointer"
+                    title="Excluir subcategoria"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

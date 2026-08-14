@@ -1,8 +1,9 @@
 "use client";
 
 import { AlfredInsights } from "@/types/dashboard";
-import { Sparkles, AlertTriangle, AlertCircle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
 
 interface AlfredInsightsCardProps {
   insights?: AlfredInsights;
@@ -44,8 +45,15 @@ export function AlfredInsightsCard({
     <div className="rounded-[20px] border border-[#1F4E79]/20 bg-gradient-to-br from-[#1F4E79]/5 via-card to-background p-6 shadow-sm space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#1F4E79] text-white shadow-md">
-            <Sparkles className="h-5 w-5" />
+          <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white p-0.5 shadow-md border border-[#1F4E79]/20 overflow-hidden">
+            <Image
+              src="/images/brand/alfred.png"
+              alt="Alfred - Seu Assessor Financeiro"
+              width={192}
+              height={192}
+              quality={95}
+              className="h-full w-full object-cover rounded-xl"
+            />
           </div>
           <div>
             <h2 className="text-base font-bold text-foreground tracking-tight">

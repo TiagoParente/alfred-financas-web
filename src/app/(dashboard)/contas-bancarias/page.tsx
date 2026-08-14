@@ -10,6 +10,7 @@ import { ContaBancariaCard } from "@/features/contas_bancarias/components/ContaB
 import { ContasBancariasListView } from "@/features/contas_bancarias/components/ContasBancariasListView";
 import { ContaBancariaModal } from "@/features/contas_bancarias/components/ContaBancariaModal";
 import { DeletarContaModal } from "@/features/contas_bancarias/components/DeletarContaModal";
+import { PainelContaModal } from "@/features/contas_bancarias/components/PainelContaModal";
 import { MovimentacaoModal } from "@/features/movimentacoes/components/MovimentacaoModal";
 import { ContasBancariasSkeleton } from "@/features/contas_bancarias/components/ContasBancariasSkeleton";
 import { ContasBancariasEmptyState } from "@/features/contas_bancarias/components/ContasBancariasEmptyState";
@@ -59,6 +60,10 @@ export default function ContasBancariasPage() {
   const [modalDeletarAberta, setModalDeletarAberta] = useState(false);
   const [contaParaDeletar, setContaParaDeletar] = useState<ContaBancaria | null>(null);
 
+  // Modal de Painel da Conta Bancária
+  const [modalPainelAberta, setModalPainelAberta] = useState(false);
+  const [contaParaPainel, setContaParaPainel] = useState<ContaBancaria | null>(null);
+
   // Modal de Movimentação
   const [modalMovimentacaoAberta, setModalMovimentacaoAberta] = useState(false);
   const [contaParaMovimentacao, setContaParaMovimentacao] = useState<ContaBancaria | null>(null);
@@ -101,6 +106,11 @@ export default function ContasBancariasPage() {
   const handleNovaConta = () => {
     setContaEmEdicao(null);
     setModalFormAberta(true);
+  };
+
+  const handleVerPainel = (conta: ContaBancaria) => {
+    setContaParaPainel(conta);
+    setModalPainelAberta(true);
   };
 
   const handleEditar = (conta: ContaBancaria) => {
@@ -381,6 +391,7 @@ export default function ContasBancariasPage() {
           ) : modoExibicao === "lista" ? (
             <ContasBancariasListView
               contas={contasFiltradas}
+              onVerPainel={handleVerPainel}
               onLancarMovimentacao={handleLancarMovimentacao}
               onEditar={handleEditar}
               onDeletar={handleDeletar}
@@ -391,6 +402,7 @@ export default function ContasBancariasPage() {
                 <ContaBancariaCard
                   key={conta.id}
                   conta={conta}
+                  onVerPainel={handleVerPainel}
                   onLancarMovimentacao={handleLancarMovimentacao}
                   onEditar={handleEditar}
                   onDeletar={handleDeletar}
@@ -402,6 +414,14 @@ export default function ContasBancariasPage() {
       )}
 
       {/* Modais */}
+      <PainelContaModal
+        open={modalPainelAberta}
+        onOpenChange={setModalPainelAberta}
+        conta={contaParaPainel}
+        familiaId={familiaAtivaId}
+        onLancarMovimentacao={handleLancarMovimentacao}
+      />
+
       <ContaBancariaModal
         open={modalFormAberta}
         onOpenChange={setModalFormAberta}

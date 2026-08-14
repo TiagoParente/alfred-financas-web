@@ -572,8 +572,26 @@ export function MovimentacaoModal({
             </div>
           )}
 
-          {/* Descrição e Valor */}
+          {/* Primeira Linha: Data e Descrição */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Data da Movimentação */}
+            <div className="space-y-1.5 sm:col-span-1">
+              <Label className="text-xs font-semibold">Data da Movimentação</Label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="date"
+                  {...register("data_movimentacao")}
+                  className="pl-9 h-10 rounded-xl bg-background/60 border-border/60 text-xs"
+                />
+              </div>
+              {errors.data_movimentacao && (
+                <p className="text-[11px] text-destructive font-medium">
+                  {errors.data_movimentacao.message}
+                </p>
+              )}
+            </div>
+
             {/* Descrição */}
             <div className="sm:col-span-2 space-y-1.5">
               <Label className="text-xs font-semibold">Descrição</Label>
@@ -586,35 +604,11 @@ export function MovimentacaoModal({
                     register("descricao").ref(el);
                     (descricaoRef as React.MutableRefObject<HTMLInputElement | null>).current = el;
                   }}
-                  className="pl-9 h-10 rounded-xl bg-background/60 border-border/60"
+                  className="pl-9 h-10 rounded-xl bg-background/60 border-border/60 text-xs"
                 />
               </div>
               {errors.descricao && (
                 <p className="text-[11px] text-destructive font-medium">{errors.descricao.message}</p>
-              )}
-            </div>
-
-            {/* Valor com Máscara BRL */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Valor</Label>
-              <Input
-                type="text"
-                inputMode="numeric"
-                placeholder="R$ 0,00"
-                value={valorDisplay}
-                onChange={(e) => {
-                  const mascarado = aplicarMascaraMoeda(e.target.value);
-                  setValorDisplay(mascarado);
-                  setValue("valor", mascarado ? parseMoeda(mascarado) : 0);
-                }}
-                className={cn(
-                  "h-10 rounded-xl bg-background/60 border-border/60 font-medium",
-                  tipoSelecionado === TipoMovimentacao.RECEITA && valorDisplay && "text-emerald-600",
-                  tipoSelecionado === TipoMovimentacao.DESPESA && valorDisplay && "text-red-600"
-                )}
-              />
-              {errors.valor && (
-                <p className="text-[11px] text-destructive font-medium">{errors.valor.message}</p>
               )}
             </div>
           </div>
@@ -631,7 +625,7 @@ export function MovimentacaoModal({
                     setValue("cartao_credito_id", val ? Number(val) : null)
                   }
                 >
-                  <SelectTrigger className="h-10 rounded-xl bg-background/60 border-border/60 text-xs">
+                  <SelectTrigger className="h-10 data-[size=default]:h-10 rounded-xl bg-background/60 border-border/60 text-xs">
                     <SelectValue placeholder="Selecione o cartão">
                       {(value: unknown) => labelCartao(value) ?? <span className="text-muted-foreground">Selecione o cartão</span>}
                     </SelectValue>
@@ -662,7 +656,7 @@ export function MovimentacaoModal({
                     setValue("conta_bancaria_id", val ? Number(val) : null)
                   }
                 >
-                  <SelectTrigger className="h-10 rounded-xl bg-background/60 border-border/60 text-xs">
+                  <SelectTrigger className="h-10 data-[size=default]:h-10 rounded-xl bg-background/60 border-border/60 text-xs">
                     <SelectValue placeholder="Selecione a conta">
                       {(value: unknown) => labelConta(value) ?? <span className="text-muted-foreground">Selecione a conta</span>}
                     </SelectValue>
@@ -693,7 +687,7 @@ export function MovimentacaoModal({
                     setValue("conta_bancaria_destino_id", val ? Number(val) : null)
                   }
                 >
-                  <SelectTrigger className="h-10 rounded-xl bg-background/60 border-border/60 text-xs">
+                  <SelectTrigger className="h-10 data-[size=default]:h-10 rounded-xl bg-background/60 border-border/60 text-xs">
                     <SelectValue placeholder="Selecione o destino">
                       {(value: unknown) =>
                         labelContaDestino(value) ?? <span className="text-muted-foreground">Selecione o destino</span>
@@ -738,87 +732,91 @@ export function MovimentacaoModal({
             )}
           </div>
 
-          {/* Data e Status */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-start">
-            <div className="space-y-1.5 sm:col-span-1">
-              <Label className="text-xs font-semibold">Data da Movimentação</Label>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="date"
-                  {...register("data_movimentacao")}
-                  className="pl-9 h-10 rounded-xl bg-background/60 border-border/60 text-xs"
-                />
-              </div>
-              {errors.data_movimentacao && (
-                <p className="text-[11px] text-destructive font-medium">
-                  {errors.data_movimentacao.message}
+          {/* Valor com Máscara BRL */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Valor</Label>
+            <Input
+              type="text"
+              inputMode="numeric"
+              placeholder="R$ 0,00"
+              value={valorDisplay}
+              onChange={(e) => {
+                const mascarado = aplicarMascaraMoeda(e.target.value);
+                setValorDisplay(mascarado);
+                setValue("valor", mascarado ? parseMoeda(mascarado) : 0);
+              }}
+              className={cn(
+                "h-10 rounded-xl bg-background/60 border-border/60 font-medium text-xs",
+                tipoSelecionado === TipoMovimentacao.RECEITA && valorDisplay && "text-emerald-600 font-semibold",
+                tipoSelecionado === TipoMovimentacao.DESPESA && valorDisplay && "text-red-600 font-semibold"
+              )}
+            />
+            {errors.valor && (
+              <p className="text-[11px] text-destructive font-medium">{errors.valor.message}</p>
+            )}
+          </div>
+
+          {/* Status da Movimentação */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold">Status da Movimentação</Label>
+              {tipoSelecionado === TipoMovimentacao.DESPESA && origemPagamento === "cartao" && (
+                <button
+                  type="button"
+                  onClick={() => setShowInfoStatus((prev) => !prev)}
+                  className="inline-flex items-center gap-1 text-[11px] text-[#1F4E79] hover:underline font-medium cursor-pointer"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                  <span>Como funciona no cartão?</span>
+                </button>
+              )}
+            </div>
+
+            <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 flex items-center justify-between gap-3">
+              <div className="space-y-0.5 min-w-0">
+                <p className="text-xs font-semibold truncate">
+                  {statusSelecionado === StatusMovimentacao.PAGO
+                    ? "Já foi realizada / paga"
+                    : "Pendente (Na Fatura / A Vencer)"}
                 </p>
-              )}
+                <p className="text-[10px] text-muted-foreground">
+                  {tipoSelecionado === TipoMovimentacao.DESPESA && origemPagamento === "cartao"
+                    ? statusSelecionado === StatusMovimentacao.PAGO
+                      ? "Para lançamentos retroativos de faturas já quitadas"
+                      : "Acumula na fatura em aberto (sem débito em conta agora)"
+                    : statusSelecionado === StatusMovimentacao.PAGO
+                    ? "Impacta o saldo da conta imediatamente"
+                    : "Agendado / Entrará no relatório de pendências"}
+                </p>
+              </div>
+              <Switch
+                checked={statusSelecionado === StatusMovimentacao.PAGO}
+                onCheckedChange={(checked) =>
+                  setValue(
+                    "status",
+                    checked ? StatusMovimentacao.PAGO : StatusMovimentacao.PENDENTE
+                  )
+                }
+              />
             </div>
 
-            {/* Toggle Pago / Pendente e Explicação */}
-            <div className="space-y-1.5 sm:col-span-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold">Status da Movimentação</Label>
-                {tipoSelecionado === TipoMovimentacao.DESPESA && origemPagamento === "cartao" && (
-                  <button
-                    type="button"
-                    onClick={() => setShowInfoStatus((prev) => !prev)}
-                    className="inline-flex items-center gap-1 text-[11px] text-[#1F4E79] hover:underline font-medium cursor-pointer"
-                  >
-                    <HelpCircle className="h-3.5 w-3.5" />
-                    <span>Como funciona no cartão?</span>
-                  </button>
-                )}
-              </div>
-
-              <div className="p-2.5 rounded-xl border border-border/60 bg-muted/20 flex items-center justify-between gap-3">
-                <div className="space-y-0.5 min-w-0">
-                  <p className="text-xs font-semibold truncate">
-                    {statusSelecionado === StatusMovimentacao.PAGO
-                      ? "Já foi realizada / paga"
-                      : "Pendente (Na Fatura / A Vencer)"}
+            {/* Card Explicativo (Alfred Insight) */}
+            {showInfoStatus && tipoSelecionado === TipoMovimentacao.DESPESA && origemPagamento === "cartao" && (
+              <div className="p-3.5 rounded-2xl bg-accent/40 border border-border/60 space-y-2 text-xs text-muted-foreground animate-in fade-in duration-200">
+                <div className="flex items-center gap-1.5 text-[#1F4E79] font-semibold text-xs">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Entenda o status no Cartão de Crédito</span>
+                </div>
+                <div className="space-y-1.5 text-[11px] leading-relaxed">
+                  <p>
+                    <strong className="text-foreground font-semibold">• Pendente (Padrão):</strong> A compra é registrada na <strong>fatura aberta</strong> do cartão. Não reduz o saldo da sua conta bancária agora e entra na previsão de contas a pagar.
                   </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {tipoSelecionado === TipoMovimentacao.DESPESA && origemPagamento === "cartao"
-                      ? statusSelecionado === StatusMovimentacao.PAGO
-                        ? "Para lançamentos retroativos de faturas já quitadas"
-                        : "Acumula na fatura em aberto (sem débito em conta agora)"
-                      : statusSelecionado === StatusMovimentacao.PAGO
-                      ? "Impacta o saldo da conta imediatamente"
-                      : "Agendado / Entrará no relatório de pendências"}
+                  <p>
+                    <strong className="text-foreground font-semibold">• Pago:</strong> Use apenas se estiver lançando uma compra <strong>retroativa de uma fatura que você já pagou no passado</strong>, garantindo que o histórico fique correto sem gerar pendências acumuladas.
                   </p>
                 </div>
-                <Switch
-                  checked={statusSelecionado === StatusMovimentacao.PAGO}
-                  onCheckedChange={(checked) =>
-                    setValue(
-                      "status",
-                      checked ? StatusMovimentacao.PAGO : StatusMovimentacao.PENDENTE
-                    )
-                  }
-                />
               </div>
-
-              {/* Card Explicativo (Alfred Insight) */}
-              {showInfoStatus && tipoSelecionado === TipoMovimentacao.DESPESA && origemPagamento === "cartao" && (
-                <div className="p-3.5 rounded-2xl bg-accent/40 border border-border/60 space-y-2 text-xs text-muted-foreground animate-in fade-in duration-200">
-                  <div className="flex items-center gap-1.5 text-[#1F4E79] font-semibold text-xs">
-                    <Sparkles className="h-4 w-4" />
-                    <span>Entenda o status no Cartão de Crédito</span>
-                  </div>
-                  <div className="space-y-1.5 text-[11px] leading-relaxed">
-                    <p>
-                      <strong className="text-foreground font-semibold">• Pendente (Padrão):</strong> A compra é registrada na <strong>fatura aberta</strong> do cartão. Não reduz o saldo da sua conta bancária agora e entra na previsão de contas a pagar.
-                    </p>
-                    <p>
-                      <strong className="text-foreground font-semibold">• Pago:</strong> Use apenas se estiver lançando uma compra <strong>retroativa de uma fatura que você já pagou no passado</strong>, garantindo que o histórico fique correto sem gerar pendências acumuladas.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+            )}
           </div>
 
           {/* Observação */}

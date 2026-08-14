@@ -12,6 +12,7 @@ import { MetasListView } from "@/features/metas/components/MetasListView";
 import { MetaModal } from "@/features/metas/components/MetaModal";
 import { AporteResgateModal } from "@/features/metas/components/AporteResgateModal";
 import { MetaDetalhesModal } from "@/features/metas/components/MetaDetalhesModal";
+import { HistoricoReservasModal } from "@/features/metas/components/HistoricoReservasModal";
 import { DeletarMetaModal } from "@/features/metas/components/DeletarMetaModal";
 import { MetasSkeleton } from "@/features/metas/components/MetasSkeleton";
 import { MetasEmptyState } from "@/features/metas/components/MetasEmptyState";
@@ -27,6 +28,7 @@ import {
   LayoutList,
   LayoutGrid,
   X,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -76,6 +78,8 @@ export default function MetasPage() {
 
   const [modalDetalhesAberta, setModalDetalhesAberta] = useState(false);
   const [metaDetalhes, setMetaDetalhes] = useState<Meta | null>(null);
+
+  const [modalHistoricoAberta, setModalHistoricoAberta] = useState(false);
 
   const [modalDeletarAberta, setModalDeletarAberta] = useState(false);
   const [metaEmDelecao, setMetaEmDelecao] = useState<Meta | null>(null);
@@ -143,6 +147,15 @@ export default function MetasPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <Button
+            onClick={() => setModalHistoricoAberta(true)}
+            variant="outline"
+            className="rounded-[10px] text-xs font-semibold gap-2 border-border/70 shadow-2xs"
+          >
+            <History className="h-4 w-4 text-[#1F4E79]" />
+            <span>Histórico de Reservas</span>
+          </Button>
+
           <Button
             onClick={() => {
               setMetaPreSelecionada(null);
@@ -388,6 +401,12 @@ export default function MetasPage() {
         open={modalDetalhesAberta}
         onOpenChange={setModalDetalhesAberta}
         meta={metaDetalhes}
+        familiaId={familiaAtiva?.id}
+      />
+
+      <HistoricoReservasModal
+        open={modalHistoricoAberta}
+        onOpenChange={setModalHistoricoAberta}
         familiaId={familiaAtiva?.id}
       />
 

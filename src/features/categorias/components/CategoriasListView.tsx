@@ -11,6 +11,7 @@ interface CategoriasListViewProps {
   onEditar: (categoria: Categoria) => void;
   onDeletar: (categoria: Categoria) => void;
   onCriarSubcategoria: (categoriaId: number, nome: string) => Promise<void>;
+  onEditarSubcategoria: (subcategoria: Subcategoria) => void;
   onDeletarSubcategoria: (subcategoria: Subcategoria) => void;
   isCriandoSubcategoria?: boolean;
 }
@@ -20,6 +21,7 @@ export function CategoriasListView({
   onEditar,
   onDeletar,
   onCriarSubcategoria,
+  onEditarSubcategoria,
   onDeletarSubcategoria,
   isCriandoSubcategoria = false,
 }: CategoriasListViewProps) {
@@ -96,6 +98,7 @@ export function CategoriasListView({
             onEditar={onEditar}
             onDeletar={onDeletar}
             onCriarSubcategoria={onCriarSubcategoria}
+            onEditarSubcategoria={onEditarSubcategoria}
             onDeletarSubcategoria={onDeletarSubcategoria}
             isCriandoSubcategoria={isCriandoSubcategoria}
           />

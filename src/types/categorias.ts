@@ -19,8 +19,8 @@ export interface Subcategoria {
 
 export interface Categoria {
   id: number;
-  familia_id: number | null;
-  e_do_sistema: boolean;
+  familia_id: number;
+  e_do_sistema?: boolean;
   nome: string;
   tipo: TipoCategoria;
   tipo_label: string;
@@ -49,4 +49,10 @@ export interface AtualizarCategoriaPayload {
 
 export interface CriarSubcategoriaPayload {
   nome: string;
+}
+
+export interface AtualizarSubcategoriaPayload {
+  nome?: string;
+  categoria_id?: number;
+  ativo?: boolean;
 }

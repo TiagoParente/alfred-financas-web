@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -30,6 +30,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+
+// ─── Helpers de formatação de moeda ───────────────────────────────────────────
+
+/** Converte string formatada ("1.234,56") → número (1234.56) */
+function parseMoeda(valorFormatado: string): number {
+  const apenasDigitos = valorFormatado.replace(/\D/g, "");
+  return parseFloat((parseInt(apenasDigitos, 10) / 100).toFixed(2)) || 0;
+}
+
+/** Formata número (1234.56) → string BRL ("R$ 1.234,56") */
+function formatarMoedaMascara(valor: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  }).format(valor);
+}
+
+/** Máscara de entrada: transforma o que o usuário digita em "R$ X.XXX,XX" */
+function aplicarMascaraMoeda(inputValue: string): string {
+  const apenasDigitos = inputValue.replace(/\D/g, "");
+  if (!apenasDigitos || apenasDigitos === "0") return "";
+  const numero = parseInt(apenasDigitos, 10) / 100;
+  return formatarMoedaMascara(numero);
+}
 
 const contaBancariaSchema = z.object({
   nome: z.string().min(2, "O nome deve ter pelo menos 2 caracteres"),
@@ -71,6 +96,7 @@ export function ContaBancariaModal({
   isSubmitting,
 }: ContaBancariaModalProps) {
   const { data: bancos = [] } = useBancos();
+  const [saldoInicialDisplay, setSaldoInicialDisplay] = useState("");
 
   const {
     register,
@@ -132,6 +158,11 @@ export function ContaBancariaModal({
         incluir_nas_reservas: contaEmEdicao.incluir_nas_reservas ?? true,
         cor_hex: contaEmEdicao.cor_hex || "#1F4E79",
       });
+      setSaldoInicialDisplay(
+        contaEmEdicao.saldo_inicial > 0
+          ? formatarMoedaMascara(Number(contaEmEdicao.saldo_inicial))
+          : ""
+      );
     } else {
       reset({
         nome: "",
@@ -143,6 +174,7 @@ export function ContaBancariaModal({
         incluir_nas_reservas: true,
         cor_hex: "#1F4E79",
       });
+      setSaldoInicialDisplay("");
     }
   }, [contaEmEdicao, open, reset]);
 
@@ -287,17 +319,28 @@ export function ContaBancariaModal({
           {/* Saldo Inicial (Apenas na criação) */}
           {!contaEmEdicao && (
             <div className="space-y-1.5">
-              <Label htmlFor="saldo_inicial">Saldo Inicial (R$)</Label>
+              <Label htmlFor="saldo_inicial" className="text-xs font-semibold">
+                Saldo Inicial
+              </Label>
               <Input
                 id="saldo_inicial"
-                type="number"
-                step="0.01"
-                placeholder="0,00"
-                {...register("saldo_inicial")}
-                className="rounded-[10px]"
+                type="text"
+                inputMode="numeric"
+                placeholder="R$ 0,00"
+                value={saldoInicialDisplay}
+                onChange={(e) => {
+                  const mascarado = aplicarMascaraMoeda(e.target.value);
+                  setSaldoInicialDisplay(mascarado);
+                  setValue("saldo_inicial", mascarado ? parseMoeda(mascarado) : 0, {
+                    shouldValidate: true,
+                  });
+                }}
+                className="h-10 rounded-xl bg-background/60 border-border/60 font-medium"
               />
               {errors.saldo_inicial && (
-                <p className="text-xs text-red-500">{errors.saldo_inicial.message}</p>
+                <p className="text-[11px] text-destructive font-medium">
+                  {errors.saldo_inicial.message}
+                </p>
               )}
             </div>
           )}

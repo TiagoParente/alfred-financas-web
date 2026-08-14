@@ -32,7 +32,9 @@ const aporteResgateSchema = z.object({
   conta_bancaria_id: z
     .string()
     .min(1, "Selecione uma conta bancária"),
-  meta_id: z.string().optional(),
+  meta_id: z
+    .string()
+    .min(1, "Selecione a meta financeira vinculada"),
   valor: z
     .string()
     .min(1, "Informe o valor")
@@ -93,17 +95,18 @@ export function AporteResgateModal({
     if (open) {
       const dataHoje = new Date().toISOString().split("T")[0];
       const defaultAccount = contas.find((c) => c.incluir_nas_reservas) || contas[0];
+      const defaultMeta = metaPreSelecionada || metas[0];
       reset({
         tipo: TipoMovimentacaoInvestimento.APORTE,
         conta_bancaria_id: defaultAccount ? defaultAccount.id.toString() : "",
-        meta_id: metaPreSelecionada ? metaPreSelecionada.id.toString() : "",
+        meta_id: defaultMeta ? defaultMeta.id.toString() : "",
         valor: "",
         data_movimentacao: dataHoje,
-        motivo: metaPreSelecionada ? `Aporte para ${metaPreSelecionada.nome}` : "Aporte de Reserva",
+        motivo: defaultMeta ? `Aporte para ${defaultMeta.nome}` : "",
         observacao: "",
       });
     }
-  }, [open, metaPreSelecionada, contas, reset]);
+  }, [open, metaPreSelecionada, metas, contas, reset]);
 
   const handleFormSubmit = async (data: AporteResgateFormData) => {
     try {
@@ -139,44 +142,99 @@ export function AporteResgateModal({
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5 mt-3">
           {/* Seletor de Tipo: APORTE vs RESGATE */}
-          <div className="grid grid-cols-2 gap-3 p-1 rounded-2xl bg-accent/40 border border-border/50">
-            <button
-              type="button"
-              onClick={() => {
-                setValue("tipo", TipoMovimentacaoInvestimento.APORTE);
-                if (metaPreSelecionada) {
-                  setValue("motivo", `Aporte para ${metaPreSelecionada.nome}`);
-                }
-              }}
-              className={cn(
-                "flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all",
-                tipoAtual === TipoMovimentacaoInvestimento.APORTE
-                  ? "bg-[#22C55E] text-white shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <ArrowUpRight className="h-4 w-4" />
-              <span>Aporte (+)</span>
-            </button>
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-accent/40 border border-border/50">
+              <button
+                type="button"
+                onClick={() => {
+                  setValue("tipo", TipoMovimentacaoInvestimento.APORTE);
+                  if (metaPreSelecionada) {
+                    setValue("motivo", `Aporte para ${metaPreSelecionada.nome}`);
+                  }
+                }}
+                className={cn(
+                  "flex flex-col items-center justify-center p-2.5 rounded-xl transition-all cursor-pointer",
+                  tipoAtual === TipoMovimentacaoInvestimento.APORTE
+                    ? "bg-[#22C55E] text-white shadow-sm font-bold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                )}
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold">
+                  <ArrowUpRight className="h-4 w-4" />
+                  <span>Aporte (Guardar)</span>
+                </div>
+                <span
+                  className={cn(
+                    "text-[10px] mt-0.5 font-medium",
+                    tipoAtual === TipoMovimentacaoInvestimento.APORTE
+                      ? "text-white/90"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  Sai da Conta ➔ Entra na Meta
+                </span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => {
-                setValue("tipo", TipoMovimentacaoInvestimento.RESGATE);
-                if (metaPreSelecionada) {
-                  setValue("motivo", `Resgate de ${metaPreSelecionada.nome}`);
-                }
-              }}
+              <button
+                type="button"
+                onClick={() => {
+                  setValue("tipo", TipoMovimentacaoInvestimento.RESGATE);
+                  if (metaPreSelecionada) {
+                    setValue("motivo", `Resgate de ${metaPreSelecionada.nome}`);
+                  }
+                }}
+                className={cn(
+                  "flex flex-col items-center justify-center p-2.5 rounded-xl transition-all cursor-pointer",
+                  tipoAtual === TipoMovimentacaoInvestimento.RESGATE
+                    ? "bg-amber-600 text-white shadow-sm font-bold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                )}
+              >
+                <div className="flex items-center gap-1.5 text-xs font-bold">
+                  <ArrowDownLeft className="h-4 w-4" />
+                  <span>Resgate (Retirar)</span>
+                </div>
+                <span
+                  className={cn(
+                    "text-[10px] mt-0.5 font-medium",
+                    tipoAtual === TipoMovimentacaoInvestimento.RESGATE
+                      ? "text-white/90"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  Sai da Meta ➔ Volta para a Conta
+                </span>
+              </button>
+            </div>
+
+            {/* Box Informativo de Fluxo Financeiro */}
+            <div
               className={cn(
-                "flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-bold transition-all",
-                tipoAtual === TipoMovimentacaoInvestimento.RESGATE
-                  ? "bg-amber-600 text-white shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
+                "p-3 rounded-xl border text-xs leading-relaxed space-y-1 transition-colors",
+                tipoAtual === TipoMovimentacaoInvestimento.APORTE
+                  ? "bg-[#22C55E]/10 border-[#22C55E]/30 text-emerald-800 dark:text-emerald-300"
+                  : "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-300"
               )}
             >
-              <ArrowDownLeft className="h-4 w-4" />
-              <span>Resgate (-)</span>
-            </button>
+              <div className="flex items-center gap-1.5 font-bold">
+                {tipoAtual === TipoMovimentacaoInvestimento.APORTE ? (
+                  <>
+                    <ArrowUpRight className="h-4 w-4 shrink-0 text-[#22C55E]" />
+                    <span>Aporte de Dinheiro</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowDownLeft className="h-4 w-4 shrink-0 text-amber-600" />
+                    <span>Resgate de Dinheiro</span>
+                  </>
+                )}
+              </div>
+              <p className="text-[11px] opacity-90">
+                {tipoAtual === TipoMovimentacaoInvestimento.APORTE
+                  ? "O dinheiro será retirado da Conta Bancária selecionada e guardado na Meta/Reserva."
+                  : "O dinheiro será retirado da Meta/Reserva e creditado de volta na Conta Bancária selecionada."}
+              </p>
+            </div>
           </div>
 
           {/* Conta Bancária */}
@@ -218,19 +276,27 @@ export function AporteResgateModal({
           {/* Meta Vinculada */}
           <div className="space-y-1.5">
             <Label htmlFor="meta_id" className="text-xs font-semibold text-foreground">
-              Meta Vinculada (Opcional)
+              Meta Vinculada *
             </Label>
             <Select
-              value={watch("meta_id") || "nenhuma"}
-              onValueChange={(val) => setValue("meta_id", !val || val === "nenhuma" ? "" : val)}
+              value={watch("meta_id")}
+              onValueChange={(val) => {
+                setValue("meta_id", val ?? "");
+                const metaSel = metas.find((m) => m.id.toString() === val);
+                if (metaSel) {
+                  setValue(
+                    "motivo",
+                    tipoAtual === TipoMovimentacaoInvestimento.RESGATE
+                      ? `Resgate de ${metaSel.nome}`
+                      : `Aporte para ${metaSel.nome}`
+                  );
+                }
+              }}
             >
               <SelectTrigger className="rounded-[10px] text-sm">
-                <SelectValue placeholder="Nenhuma meta (Apenas reserva geral)" />
+                <SelectValue placeholder="Selecione a meta financeira" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="nenhuma" label="Sem meta específica (Reserva Geral)">
-                  Sem meta específica (Reserva Geral)
-                </SelectItem>
                 {metas.map((meta) => (
                   <SelectItem
                     key={meta.id}
@@ -242,6 +308,14 @@ export function AporteResgateModal({
                 ))}
               </SelectContent>
             </Select>
+            {errors.meta_id && (
+              <p className="text-xs text-red-500 font-medium">{errors.meta_id.message}</p>
+            )}
+            {metas.length === 0 && (
+              <p className="text-xs text-amber-600 font-medium">
+                Você precisa cadastrar pelo menos uma meta para realizar aportes ou resgates.
+              </p>
+            )}
           </div>
 
           {/* Valor (R$) e Data */}
@@ -320,7 +394,7 @@ export function AporteResgateModal({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || metas.length === 0}
               className={cn(
                 "rounded-[10px] font-medium text-xs px-5 shadow-sm text-white",
                 tipoAtual === TipoMovimentacaoInvestimento.APORTE

@@ -3,10 +3,14 @@
 import { useFamilias } from "@/features/familias/hooks/useFamilias";
 import { useDashboard } from "@/features/dashboard/hooks/useDashboard";
 import { useContasBancarias } from "@/features/contas_bancarias/hooks/useContasBancarias";
+import { useContasFixas } from "@/features/contas_fixas/hooks/useContasFixas";
+import { useCartoes } from "@/features/cartoes/hooks/useCartoes";
 import { DashboardKpiCards } from "@/features/dashboard/components/DashboardKpiCards";
 import { AlfredInsightsCard } from "@/features/dashboard/components/AlfredInsightsCard";
 import { ProximosVencimentosCard } from "@/features/dashboard/components/ProximosVencimentosCard";
 import { GraficoReceitasDespesas } from "@/features/dashboard/components/GraficoReceitasDespesas";
+import { GraficoTopCategoriasDespesas } from "@/features/dashboard/components/GraficoTopCategoriasDespesas";
+import { GraficoEvolucaoInvestimentos } from "@/features/dashboard/components/GraficoEvolucaoInvestimentos";
 import { ContaBancariaCard } from "@/features/contas_bancarias/components/ContaBancariaCard";
 import { ContaBancariaModal } from "@/features/contas_bancarias/components/ContaBancariaModal";
 import { ContaBancaria } from "@/types/contas";
@@ -39,9 +43,13 @@ export default function DashboardPage() {
     proximosVencimentos,
     orcamentos,
     metas,
+    evolucaoInvestimentos,
     alfredInsights,
     isLoading,
   } = useDashboard(familiaAtiva?.id, mes, ano);
+
+  const { contasFixas } = useContasFixas(familiaAtiva?.id, true);
+  const { resumo: resumoCartoes } = useCartoes(familiaAtiva?.id);
 
   const {
     contas,
@@ -173,12 +181,31 @@ export default function DashboardPage() {
         />
       )}
 
-      {/* 3. Grid de Gráfico de Fluxo de Caixa & Próximos Vencimentos */}
+      {/* 3. Grid de Gráficos Analíticos (Fluxo de Caixa & Reservas) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {isLoading ? (
           <div className="h-72 rounded-[16px] bg-accent/40 animate-pulse" />
         ) : (
-          <GraficoReceitasDespesas mensal={mensal} />
+          <GraficoReceitasDespesas
+            mensal={mensal}
+            contasFixas={contasFixas}
+            faturaCartoesTotal={resumoCartoes.fatura_atual_total}
+          />
+        )}
+
+        {isLoading ? (
+          <div className="h-72 rounded-[16px] bg-accent/40 animate-pulse" />
+        ) : (
+          <GraficoEvolucaoInvestimentos evolucao={evolucaoInvestimentos} />
+        )}
+      </div>
+
+      {/* 4. Grid de Gastos por Categoria & Próximos Vencimentos */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {isLoading ? (
+          <div className="h-72 rounded-[16px] bg-accent/40 animate-pulse" />
+        ) : (
+          <GraficoTopCategoriasDespesas orcamentos={orcamentos} />
         )}
 
         {isLoading ? (

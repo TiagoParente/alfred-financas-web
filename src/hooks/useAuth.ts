@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { authService } from "@/services/auth";
 import type {
@@ -8,6 +8,7 @@ import type {
   VerificarCodigoPayload,
 } from "@/types/auth";
 import axios from "axios";
+import { USER_UPDATED_EVENT } from "@/features/perfil/hooks/usePerfil";
 
 export function useSolicitarCodigo() {
   return useMutation({
@@ -18,6 +19,7 @@ export function useSolicitarCodigo() {
 
 export function useVerificarCodigo() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (payload: VerificarCodigoPayload) =>
@@ -25,6 +27,15 @@ export function useVerificarCodigo() {
     onSuccess: (data) => {
       localStorage.setItem("alfred_token", data.token);
       localStorage.setItem("alfred_user", JSON.stringify(data.usuario));
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent(USER_UPDATED_EVENT, { detail: data.usuario })
+        );
+      }
+
+      queryClient.clear();
+      queryClient.invalidateQueries();
       router.push("/dashboard");
     },
   });
@@ -32,6 +43,7 @@ export function useVerificarCodigo() {
 
 export function useLogout() {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   return async () => {
     try {
@@ -42,6 +54,7 @@ export function useLogout() {
       localStorage.removeItem("alfred_token");
       localStorage.removeItem("alfred_user");
       localStorage.removeItem("alfred_familia_id");
+      queryClient.clear();
       router.push("/entrar");
     }
   };

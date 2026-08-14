@@ -10,12 +10,16 @@ export const api = axios.create({
   withCredentials: false,
 });
 
-// Interceptor para adicionar Bearer Token automaticamente
+// Interceptor para adicionar Bearer Token e Familia ID automaticamente
 api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("alfred_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    const familiaId = localStorage.getItem("alfred_familia_id");
+    if (familiaId) {
+      config.headers["X-Familia-Id"] = familiaId;
     }
   }
   return config;
@@ -28,7 +32,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       if (typeof window !== "undefined") {
         localStorage.removeItem("alfred_token");
-        // O componente/hook que chamou a API deve tratar o redirecionamento
+        localStorage.removeItem("alfred_user");
+        localStorage.removeItem("alfred_familia_id");
+        if (!window.location.pathname.startsWith("/entrar")) {
+          window.location.href = "/entrar";
+        }
       }
     }
     return Promise.reject(error);

@@ -20,6 +20,7 @@ export interface MovimentacaoInvestimento {
   conta_bancaria?: ContaBancaria | null;
   meta_id?: number | null;
   meta_nome?: string | null;
+  meta?: Meta | null;
   tipo: TipoMovimentacaoInvestimento;
   tipo_label: string;
   valor: number;

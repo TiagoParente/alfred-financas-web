@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -11,6 +12,7 @@ import {
   Target,
   CalendarSync,
   PieChart,
+  Settings,
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -61,19 +63,32 @@ const navItems: NavItem[] = [
     icone: CreditCard,
     ativo: true,
   },
-  {
+  /*{
     titulo: "Metas & Reservas",
     href: "/metas",
     icone: Target,
-    ativo: true,
-  },
+    ativo: false,
+  },*/
   {
     titulo: "Orçamentos",
     href: "/orcamentos",
     icone: PieChart,
     ativo: true,
   },
+  {
+    titulo: "Alfred IA",
+    href: "/alfred-ia",
+    icone: Sparkles,
+    ativo: true,
+  },
+  {
+    titulo: "Configurações",
+    href: "/configuracoes",
+    icone: Settings,
+    ativo: true,
+  },
 ];
+
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -129,15 +144,35 @@ export function Sidebar() {
         </nav>
       </div>
 
-      <div className="mt-auto p-3.5 rounded-2xl bg-accent/30 border border-border/40 space-y-2">
-        <div className="flex items-center gap-2 text-[#1F4E79] font-semibold text-xs">
-          <Sparkles className="h-4 w-4" />
-          <span>Alfred IA</span>
+      <Link
+        href="/alfred-ia"
+        className="mt-auto block p-3.5 rounded-2xl bg-gradient-to-br from-[#1F4E79]/10 to-accent/30 border border-[#1F4E79]/20 hover:border-[#1F4E79]/40 space-y-2.5 transition-all group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="relative h-10 w-10 shrink-0 rounded-full border border-[#1F4E79]/30 overflow-hidden shadow-sm bg-white">
+            <Image
+              src="/images/brand/alfred.png"
+              alt="Alfred IA"
+              width={160}
+              height={160}
+              quality={95}
+              className="h-full w-full object-cover"
+            />
+          </div>
+          <div>
+            <div className="flex items-center gap-1 text-[#1F4E79] font-bold text-xs">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Alfred IA</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground font-medium">
+              Assessor Financeiro
+            </p>
+          </div>
         </div>
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          Seu assistente financeiro em breve trará insights preditivos sobre seus gastos.
+        <p className="text-xs text-muted-foreground leading-relaxed group-hover:text-foreground transition-colors">
+          Converse com o Alfred e receba análises inteligentes sobre sua família.
         </p>
-      </div>
+      </Link>
     </aside>
   );
 }
