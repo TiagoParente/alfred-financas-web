@@ -64,6 +64,7 @@ interface CategoriaModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   categoriaEmEdicao?: Categoria | null;
+  tipoPadrao?: TipoCategoria;
   onSubmit: (data: CategoriaFormData) => Promise<void>;
   isSubmitting: boolean;
 }
@@ -108,6 +109,7 @@ export function CategoriaModal({
   open,
   onOpenChange,
   categoriaEmEdicao,
+  tipoPadrao,
   onSubmit,
   isSubmitting,
 }: CategoriaModalProps) {
@@ -123,7 +125,7 @@ export function CategoriaModal({
     resolver: zodResolver(categoriaSchema),
     defaultValues: {
       nome: "",
-      tipo: TipoCategoria.DESPESA,
+      tipo: tipoPadrao || TipoCategoria.DESPESA,
       icone: "Tag",
       cor_hex: "#1F4E79",
     },
@@ -144,12 +146,12 @@ export function CategoriaModal({
     } else {
       reset({
         nome: "",
-        tipo: TipoCategoria.DESPESA,
+        tipo: tipoPadrao || TipoCategoria.DESPESA,
         icone: "Tag",
         cor_hex: "#1F4E79",
       });
     }
-  }, [categoriaEmEdicao, open, reset]);
+  }, [categoriaEmEdicao, tipoPadrao, open, reset]);
 
   const handleFormSubmit = async (data: CategoriaFormData) => {
     try {

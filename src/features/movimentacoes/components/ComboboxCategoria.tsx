@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Combobox } from "@base-ui/react/combobox";
-import { Search, ChevronDown, X, Check } from "lucide-react";
+import { Search, ChevronDown, X, Check, Plus } from "lucide-react";
 import { Categoria } from "@/types/categorias";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +32,8 @@ interface ComboboxCategoriaProps {
   hasError?: boolean;
   disabled?: boolean;
   className?: string;
+  onNovaCategoria?: () => void;
+  onNovaSubcategoria?: () => void;
 }
 
 // ─── Componente ───────────────────────────────────────────────────────────────
@@ -44,6 +46,8 @@ export function ComboboxCategoria({
   hasError = false,
   disabled = false,
   className,
+  onNovaCategoria,
+  onNovaSubcategoria,
 }: ComboboxCategoriaProps) {
   const [inputValue, setInputValue] = useState("");
 
@@ -155,7 +159,7 @@ export function ComboboxCategoria({
                 onChange(null);
                 setInputValue("");
               }}
-              className="p-0.5 rounded hover:bg-muted transition-colors"
+              className="p-0.5 rounded hover:bg-muted transition-colors cursor-pointer"
               aria-label="Limpar categoria"
             >
               <X className="h-3 w-3 text-muted-foreground" />
@@ -196,7 +200,7 @@ export function ComboboxCategoria({
                   type="button"
                   tabIndex={-1}
                   onClick={() => setInputValue("")}
-                  className="p-0.5 rounded hover:bg-muted transition-colors"
+                  className="p-0.5 rounded hover:bg-muted transition-colors cursor-pointer"
                 >
                   <X className="h-3 w-3 text-muted-foreground" />
                 </button>
@@ -205,12 +209,25 @@ export function ComboboxCategoria({
 
             {/* Lista de itens */}
             <Combobox.List
-              className="max-h-[260px] overflow-y-auto p-1 overscroll-contain"
+              className="max-h-[240px] overflow-y-auto p-1 overscroll-contain"
             >
               {itensFiltrados.length === 0 ? (
-                <Combobox.Empty className="py-6 text-center text-xs text-muted-foreground">
-                  Nenhuma categoria encontrada
-                </Combobox.Empty>
+                <div className="py-5 px-3 text-center space-y-2">
+                  <p className="text-xs text-muted-foreground">Nenhuma categoria encontrada</p>
+                  {onNovaCategoria && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onNovaCategoria();
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium bg-[#1F4E79]/10 text-[#1F4E79] dark:text-sky-400 hover:bg-[#1F4E79]/20 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      <span>Criar nova categoria</span>
+                    </button>
+                  )}
+                </div>
               ) : (
                 itensFiltrados.map((item) => (
                   <Combobox.Item
@@ -240,6 +257,40 @@ export function ComboboxCategoria({
                 ))
               )}
             </Combobox.List>
+
+            {/* Ações de Criação Rápida no Rodapé do Popup */}
+            {(onNovaCategoria || onNovaSubcategoria) && (
+              <div className="p-1.5 border-t border-border/50 bg-muted/30 flex items-center justify-between gap-1">
+                {onNovaCategoria ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNovaCategoria();
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 text-[11px] font-semibold text-[#1F4E79] dark:text-sky-400 hover:bg-[#1F4E79]/10 rounded-md transition-colors cursor-pointer"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>Nova Categoria</span>
+                  </button>
+                ) : (
+                  <div />
+                )}
+                {onNovaSubcategoria && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onNovaSubcategoria();
+                    }}
+                    className="flex items-center gap-1 px-2 py-1 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors cursor-pointer"
+                  >
+                    <Plus className="h-3 w-3" />
+                    <span>Nova Subcategoria</span>
+                  </button>
+                )}
+              </div>
+            )}
           </Combobox.Popup>
         </Combobox.Positioner>
       </Combobox.Portal>

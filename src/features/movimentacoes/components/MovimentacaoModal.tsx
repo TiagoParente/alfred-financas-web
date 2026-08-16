@@ -18,6 +18,7 @@ import {
   Sparkles,
   Calculator,
   Layers,
+  Plus,
 } from "lucide-react";
 import {
   Dialog,
@@ -48,6 +49,9 @@ import {
 import { useContasBancarias } from "@/features/contas_bancarias/hooks/useContasBancarias";
 import { useCartoes } from "@/features/cartoes/hooks/useCartoes";
 import { useCategorias } from "@/features/categorias/hooks/useCategorias";
+import { CategoriaModal, CategoriaFormData } from "@/features/categorias/components/CategoriaModal";
+import { NovaSubcategoriaModal } from "@/features/categorias/components/NovaSubcategoriaModal";
+import { TipoCategoria } from "@/types/categorias";
 import { ContaBancaria } from "@/types/contas";
 import { CartaoCredito } from "@/types/cartoes";
 import { cn } from "@/lib/utils";
@@ -174,8 +178,16 @@ export function MovimentacaoModal({
 }: MovimentacaoModalProps) {
   const { contas } = useContasBancarias(familiaId);
   const { cartoes } = useCartoes(familiaId);
-  const { categorias } = useCategorias(familiaId);
+  const {
+    categorias,
+    criarCategoria,
+    isCriandoCategoria,
+    criarSubcategoria,
+    isCriandoSubcategoria,
+  } = useCategorias(familiaId);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalNovaCategoriaAberta, setModalNovaCategoriaAberta] = useState(false);
+  const [modalNovaSubcategoriaAberta, setModalNovaSubcategoriaAberta] = useState(false);
   const [origemPagamento, setOrigemPagamento] = useState<"conta" | "cartao">("conta");
   const [valorDisplay, setValorDisplay] = useState("");
   const [totalParcelas, setTotalParcelas] = useState(1);
@@ -183,6 +195,30 @@ export function MovimentacaoModal({
   const [valorParcelaDisplay, setValorParcelaDisplay] = useState("");
   const [showInfoStatus, setShowInfoStatus] = useState(false);
   const descricaoRef = useRef<HTMLInputElement>(null);
+
+  const handleCriarNovaCategoria = async (formData: CategoriaFormData) => {
+    const novaCat = await criarCategoria({
+      nome: formData.nome,
+      tipo: formData.tipo,
+      icone: formData.icone || null,
+      cor_hex: formData.cor_hex || null,
+    });
+    if (novaCat?.id) {
+      handleCategoriaChange(`cat:${novaCat.id}`);
+    }
+  };
+
+  const handleCriarNovaSubcategoria = async (categoriaId: number, nome: string) => {
+    const novaSub = await criarSubcategoria({
+      categoriaId,
+      payload: { nome },
+    });
+    if (novaSub?.id) {
+      setValue("subcategoria_id", novaSub.id, { shouldValidate: true });
+      setValue("categoria_id", categoriaId, { shouldValidate: true });
+    }
+    return novaSub;
+  };
 
   const {
     register,
@@ -794,11 +830,34 @@ export function MovimentacaoModal({
 
                 {/* Categoria ocupando 2 colunas quando origem for cartão */}
                 <div className="space-y-1.5 sm:col-span-2">
-                  <Label className="text-xs font-semibold">Categoria</Label>
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold">Categoria *</Label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setModalNovaCategoriaAberta(true)}
+                        className="text-[11px] font-medium text-[#1F4E79] dark:text-sky-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span>Nova Categoria</span>
+                      </button>
+                      <span className="text-muted-foreground/60 text-[10px]">•</span>
+                      <button
+                        type="button"
+                        onClick={() => setModalNovaSubcategoriaAberta(true)}
+                        className="text-[11px] font-medium text-[#1F4E79] dark:text-sky-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                      >
+                        <Plus className="h-3 w-3" />
+                        <span>Subcategoria</span>
+                      </button>
+                    </div>
+                  </div>
                   <ComboboxCategoria
                     categorias={categoriasFiltradas}
                     valorSelecionado={valorCategoriaSelecionada}
                     onChange={(val) => handleCategoriaChange(val)}
+                    onNovaCategoria={() => setModalNovaCategoriaAberta(true)}
+                    onNovaSubcategoria={() => setModalNovaSubcategoriaAberta(true)}
                     placeholder="Buscar categoria..."
                     hasError={Boolean(errors.categoria_id)}
                   />
@@ -890,11 +949,34 @@ export function MovimentacaoModal({
                 {/* Combobox com busca de Categoria / Subcategoria */}
                 {tipoSelecionado !== TipoMovimentacao.TRANSFERENCIA && (
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold">Categoria</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-semibold">Categoria *</Label>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setModalNovaCategoriaAberta(true)}
+                          className="text-[11px] font-medium text-[#1F4E79] dark:text-sky-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span>Nova Categoria</span>
+                        </button>
+                        <span className="text-muted-foreground/60 text-[10px]">•</span>
+                        <button
+                          type="button"
+                          onClick={() => setModalNovaSubcategoriaAberta(true)}
+                          className="text-[11px] font-medium text-[#1F4E79] dark:text-sky-400 hover:underline flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <Plus className="h-3 w-3" />
+                          <span>Subcategoria</span>
+                        </button>
+                      </div>
+                    </div>
                     <ComboboxCategoria
                       categorias={categoriasFiltradas}
                       valorSelecionado={valorCategoriaSelecionada}
                       onChange={(val) => handleCategoriaChange(val)}
+                      onNovaCategoria={() => setModalNovaCategoriaAberta(true)}
+                      onNovaSubcategoria={() => setModalNovaSubcategoriaAberta(true)}
                       placeholder="Buscar categoria..."
                       hasError={Boolean(errors.categoria_id)}
                     />
@@ -1143,6 +1225,34 @@ export function MovimentacaoModal({
           </div>
         </form>
       </DialogContent>
+
+      {/* Modal de Criação Rápida de Categoria */}
+      <CategoriaModal
+        open={modalNovaCategoriaAberta}
+        onOpenChange={setModalNovaCategoriaAberta}
+        tipoPadrao={
+          tipoSelecionado === TipoMovimentacao.RECEITA
+            ? TipoCategoria.RECEITA
+            : TipoCategoria.DESPESA
+        }
+        onSubmit={handleCriarNovaCategoria}
+        isSubmitting={isCriandoCategoria}
+      />
+
+      {/* Modal de Criação Rápida de Subcategoria */}
+      <NovaSubcategoriaModal
+        open={modalNovaSubcategoriaAberta}
+        onOpenChange={setModalNovaSubcategoriaAberta}
+        categorias={categoriasFiltradas}
+        categoriaIdPadrao={watch("categoria_id") || undefined}
+        tipoFiltro={
+          tipoSelecionado === TipoMovimentacao.RECEITA
+            ? TipoCategoria.RECEITA
+            : TipoCategoria.DESPESA
+        }
+        onSubmit={handleCriarNovaSubcategoria}
+        isSubmitting={isCriandoSubcategoria}
+      />
     </Dialog>
   );
 }
