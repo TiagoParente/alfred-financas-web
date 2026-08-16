@@ -28,6 +28,7 @@ export const movimentacaoService = {
     if (params?.status) queryParams.status = params.status;
     if (params?.categoria_id) queryParams.categoria_id = params.categoria_id;
     if (params?.conta_bancaria_id) queryParams.conta_bancaria_id = params.conta_bancaria_id;
+    if (params?.cartao_credito_id) queryParams.cartao_credito_id = params.cartao_credito_id;
     if (params?.busca) queryParams.busca = params.busca;
     if (params?.per_page) queryParams.per_page = params.per_page;
     if (params?.page) queryParams.page = params.page;

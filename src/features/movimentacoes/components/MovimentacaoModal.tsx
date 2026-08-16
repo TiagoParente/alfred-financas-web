@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ComboboxCategoria } from "./ComboboxCategoria";
+import { ContaCartaoContextoInfo } from "./ContaCartaoContextoInfo";
 import {
   CriarMovimentacaoPayload,
   Movimentacao,
@@ -213,7 +214,18 @@ export function MovimentacaoModal({
   const tipoSelecionado = watch("tipo");
   const statusSelecionado = watch("status");
   const contaBancariaIdSelecionada = watch("conta_bancaria_id");
+  const contaBancariaDestinoIdSelecionada = watch("conta_bancaria_destino_id");
   const cartaoCreditoIdSelecionado = watch("cartao_credito_id");
+
+  const contaSelecionada = contas.find(
+    (c) => c.id === Number(contaBancariaIdSelecionada)
+  );
+  const contaDestinoSelecionada = contas.find(
+    (c) => c.id === Number(contaBancariaDestinoIdSelecionada)
+  );
+  const cartaoSelecionado = cartoes.find(
+    (c) => c.id === Number(cartaoCreditoIdSelecionado)
+  );
 
   // ── Categorias filtradas por tipo ────────────────────────────────────────────
   const categoriasFiltradas = categorias.filter((cat) => {
@@ -796,6 +808,16 @@ export function MovimentacaoModal({
                     </p>
                   )}
                 </div>
+
+                {/* Exibição do Saldo Atualizado e Última Movimentação do Cartão */}
+                {cartaoSelecionado && (
+                  <div className="sm:col-span-2">
+                    <ContaCartaoContextoInfo
+                      cartao={cartaoSelecionado}
+                      familiaId={familiaId}
+                    />
+                  </div>
+                )}
               </>
             ) : (
               /* Seleção de Conta de Origem */
@@ -881,6 +903,38 @@ export function MovimentacaoModal({
                         {errors.categoria_id.message}
                       </p>
                     )}
+                  </div>
+                )}
+
+                {/* Exibição de Saldo Atualizado e Última Movimentação para Receita / Despesa em Conta */}
+                {tipoSelecionado !== TipoMovimentacao.TRANSFERENCIA && contaSelecionada && (
+                  <div className="sm:col-span-2">
+                    <ContaCartaoContextoInfo
+                      conta={contaSelecionada}
+                      familiaId={familiaId}
+                    />
+                  </div>
+                )}
+
+                {/* Exibição de Saldos Atualizados e Últimas Movimentações para Transferência */}
+                {tipoSelecionado === TipoMovimentacao.TRANSFERENCIA && (contaSelecionada || contaDestinoSelecionada) && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:col-span-2">
+                    {contaSelecionada ? (
+                      <ContaCartaoContextoInfo
+                        conta={contaSelecionada}
+                        familiaId={familiaId}
+                        labelPersonalizado="Saldo Origem"
+                      />
+                    ) : (
+                      <div />
+                    )}
+                    {contaDestinoSelecionada ? (
+                      <ContaCartaoContextoInfo
+                        conta={contaDestinoSelecionada}
+                        familiaId={familiaId}
+                        labelPersonalizado="Saldo Destino"
+                      />
+                    ) : null}
                   </div>
                 )}
               </>
