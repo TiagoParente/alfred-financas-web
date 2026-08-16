@@ -5,6 +5,8 @@ import {
   CriarCartaoCreditoPayload,
   DetalhesFaturaResponse,
   ListarCartoesCreditoResponse,
+  PagarFaturaPayload,
+  PagarFaturaResponse,
 } from "@/types/cartoes";
 
 export const cartaoCreditoService = {
@@ -96,6 +98,21 @@ export const cartaoCreditoService = {
     const { data } = await api.get<{ data: DetalhesFaturaResponse }>(
       `/v1/cartoes-credito/${id}/fatura`,
       { params }
+    );
+    return data.data;
+  },
+
+  /**
+   * Realiza o pagamento integral de uma fatura de cartão de crédito debitando da conta selecionada.
+   * POST /v1/cartoes-credito/{id}/pagar-fatura
+   */
+  async pagarFatura(
+    id: number,
+    payload: PagarFaturaPayload
+  ): Promise<PagarFaturaResponse> {
+    const { data } = await api.post<{ data: PagarFaturaResponse }>(
+      `/v1/cartoes-credito/${id}/pagar-fatura`,
+      payload
     );
     return data.data;
   },

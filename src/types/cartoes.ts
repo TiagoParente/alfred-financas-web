@@ -113,3 +113,21 @@ export interface AtualizarCartaoCreditoPayload {
   cor_hex?: string | null;
   ativo?: boolean;
 }
+
+export interface PagarFaturaPayload {
+  conta_bancaria_id: number;
+  mes_ano?: string;
+  data_pagamento?: string;
+  observacao?: string;
+}
+
+export interface PagarFaturaResponse {
+  fatura: DetalhesFaturaResponse;
+  cartao: CartaoCredito;
+  valor_pago: number;
+  conta_bancaria: {
+    id: number;
+    nome: string;
+    saldo_atual: number;
+  };
+}

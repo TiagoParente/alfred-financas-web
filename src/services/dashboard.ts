@@ -9,16 +9,18 @@ export const dashboardService = {
   async obter(
     mes?: number,
     ano?: number,
-    familiaId?: number
+    familiaId?: number,
+    regime?: string
   ): Promise<DashboardData> {
     const headers: Record<string, string> = {};
     if (familiaId) {
       headers["X-Familia-Id"] = familiaId.toString();
     }
 
-    const params: Record<string, number> = {};
+    const params: Record<string, string | number> = {};
     if (mes) params.mes = mes;
     if (ano) params.ano = ano;
+    if (regime) params.regime = regime;
 
     const { data } = await api.get<{ data: DashboardData }>("/v1/dashboard", {
       headers,

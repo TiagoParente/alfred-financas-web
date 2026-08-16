@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,6 +12,7 @@ import {
   FileText,
   Plus,
   Layers,
+  CreditCard,
 } from "lucide-react";
 import { CartaoCredito, StatusFatura } from "@/types/cartoes";
 import { useFaturaCartao } from "../hooks/useFaturaCartao";
@@ -25,6 +26,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PagarFaturaModal } from "./PagarFaturaModal";
 
 interface ItemFaturaExibicao {
   id: string;
@@ -49,6 +51,27 @@ interface FaturaModalProps {
   onLancarDespesa?: (cartao: CartaoCredito) => void;
 }
 
+function calcularDataInicialFatura(cartao: CartaoCredito | null): Date {
+  const hoje = new Date();
+  if (!cartao) return hoje;
+
+  const diaHoje = hoje.getDate();
+  const anoHoje = hoje.getFullYear();
+  const mesHoje = hoje.getMonth();
+
+  if (cartao.dia_fechamento < cartao.dia_vencimento) {
+    if (diaHoje <= cartao.dia_fechamento) {
+      return new Date(anoHoje, mesHoje, 1);
+    }
+    return new Date(anoHoje, mesHoje + 1, 1);
+  } else {
+    if (diaHoje <= cartao.dia_fechamento) {
+      return new Date(anoHoje, mesHoje + 1, 1);
+    }
+    return new Date(anoHoje, mesHoje + 2, 1);
+  }
+}
+
 export function FaturaModal({
   open,
   onOpenChange,
@@ -56,34 +79,14 @@ export function FaturaModal({
   onLancarDespesa,
 }: FaturaModalProps) {
   // Data de referência padrão: ano-mês da fatura aberta
-  const [dataRef, setDataRef] = useState<Date>(new Date());
+  const [dataRef, setDataRef] = useState<Date>(() => calcularDataInicialFatura(cartao));
+  const [prevCartaoId, setPrevCartaoId] = useState<number | null>(cartao?.id ?? null);
+  const [modalPagarAberta, setModalPagarAberta] = useState(false);
 
-  useEffect(() => {
-    if (open && cartao) {
-      const hoje = new Date();
-      const diaHoje = hoje.getDate();
-      const anoHoje = hoje.getFullYear();
-      const mesHoje = hoje.getMonth();
-
-      let dataInicial: Date;
-
-      if (cartao.dia_fechamento < cartao.dia_vencimento) {
-        if (diaHoje <= cartao.dia_fechamento) {
-          dataInicial = new Date(anoHoje, mesHoje, 1);
-        } else {
-          dataInicial = new Date(anoHoje, mesHoje + 1, 1);
-        }
-      } else {
-        if (diaHoje <= cartao.dia_fechamento) {
-          dataInicial = new Date(anoHoje, mesHoje + 1, 1);
-        } else {
-          dataInicial = new Date(anoHoje, mesHoje + 2, 1);
-        }
-      }
-
-      setDataRef(dataInicial);
-    }
-  }, [open, cartao]);
+  if (cartao && cartao.id !== prevCartaoId) {
+    setPrevCartaoId(cartao.id);
+    setDataRef(calcularDataInicialFatura(cartao));
+  }
 
   const ano = dataRef.getFullYear();
   const mes = String(dataRef.getMonth() + 1).padStart(2, "0");
@@ -147,257 +150,294 @@ export function FaturaModal({
     );
   }, [fatura]);
 
+  const podePagarFatura = fatura && fatura.status !== StatusFatura.PAGA && Number(fatura.valor_total) > 0;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[650px] rounded-[20px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
-        {/* Header Fixo */}
-        <DialogHeader className="p-6 pb-4 border-b border-border/40">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div
-                className="flex h-10 w-10 items-center justify-center rounded-xl text-white font-bold"
-                style={{
-                  backgroundColor: cartao?.cor_hex || cartao?.banco?.cor_hex || "#1F4E79",
-                }}
-              >
-                <Receipt className="h-5 w-5" />
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[650px] rounded-[20px] max-h-[90vh] flex flex-col p-0 overflow-hidden">
+          {/* Header Fixo */}
+          <DialogHeader className="p-6 pb-4 border-b border-border/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-xl text-white font-bold"
+                  style={{
+                    backgroundColor: cartao?.cor_hex || cartao?.banco?.cor_hex || "#1F4E79",
+                  }}
+                >
+                  <Receipt className="h-5 w-5" />
+                </div>
+                <div>
+                  <DialogTitle className="text-lg font-bold">
+                    Fatura: {cartao?.nome}
+                  </DialogTitle>
+                  <p className="text-xs text-muted-foreground">
+                    {cartao?.banco?.nome ?? "Cartão de Crédito"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <DialogTitle className="text-lg font-bold">
-                  Fatura: {cartao?.nome}
-                </DialogTitle>
-                <p className="text-xs text-muted-foreground">
-                  {cartao?.banco?.nome ?? "Cartão de Crédito"}
-                </p>
+
+              <div className="flex items-center gap-2">
+                {podePagarFatura && (
+                  <Button
+                    onClick={() => setModalPagarAberta(true)}
+                    className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1.5 h-9 cursor-pointer shadow-sm font-semibold"
+                  >
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    <span>Pagar Fatura</span>
+                  </Button>
+                )}
+
+                {onLancarDespesa && cartao && (
+                  <Button
+                    onClick={() => {
+                      onOpenChange(false);
+                      onLancarDespesa(cartao);
+                    }}
+                    variant="outline"
+                    className="rounded-xl border-border/60 text-xs gap-1.5 h-9 cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Nova Despesa</span>
+                  </Button>
+                )}
               </div>
             </div>
 
-            {onLancarDespesa && cartao && (
+            {/* Navegação entre Meses */}
+            <div className="mt-4 flex items-center justify-between bg-accent/40 rounded-xl p-2">
               <Button
-                onClick={() => {
-                  onOpenChange(false);
-                  onLancarDespesa(cartao);
-                }}
-                className="rounded-xl bg-[#1F4E79] hover:bg-[#1F4E79]/90 text-white text-xs gap-1.5 h-9 cursor-pointer"
+                variant="ghost"
+                size="sm"
+                onClick={handleMesAnterior}
+                className="h-8 rounded-lg text-xs hover:bg-background"
               >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Nova Despesa</span>
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Mês anterior
               </Button>
-            )}
-          </div>
-
-          {/* Navegação entre Meses */}
-          <div className="mt-4 flex items-center justify-between bg-accent/40 rounded-xl p-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMesAnterior}
-              className="h-8 rounded-lg text-xs hover:bg-background"
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Mês anterior
-            </Button>
-            <span className="text-sm font-semibold text-foreground">
-              {mesAnoTitulo}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleProximoMes}
-              className="h-8 rounded-lg text-xs hover:bg-background"
-            >
-              Próximo mês
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        </DialogHeader>
-
-        {/* Conteúdo com Scroll */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-5">
-          {isLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-20 w-full rounded-xl" />
-              <Skeleton className="h-12 w-full rounded-xl" />
-              <Skeleton className="h-12 w-full rounded-xl" />
+              <span className="text-sm font-semibold text-foreground">
+                {mesAnoTitulo}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleProximoMes}
+                className="h-8 rounded-lg text-xs hover:bg-background"
+              >
+                Próximo mês
+                <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
-          ) : !fatura ? (
-            <div className="text-center py-8 text-muted-foreground text-sm">
-              Não foi possível carregar a fatura para este período.
-            </div>
-          ) : (
-            <>
-              {/* Resumo da Fatura & Badges */}
-              <div className="rounded-2xl border border-border/50 bg-card/60 p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-muted-foreground uppercase font-medium tracking-wider">
-                      Valor Total da Fatura
-                    </span>
-                    <h3 className="text-2xl font-bold text-foreground">
-                      {formatarMoeda(fatura.valor_total)}
-                    </h3>
-                  </div>
+          </DialogHeader>
 
-                  {/* Badge de Status */}
-                  <div>
-                    {fatura.status === StatusFatura.PAGA ? (
-                      <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 px-3 py-1 gap-1.5 rounded-full text-xs font-semibold">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        Fatura Paga
-                      </Badge>
-                    ) : fatura.status === StatusFatura.FECHADA ? (
-                      <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 px-3 py-1 gap-1.5 rounded-full text-xs font-semibold">
-                        <Clock className="h-3.5 w-3.5" />
-                        Fatura Fechada
-                      </Badge>
-                    ) : (
-                      <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 px-3 py-1 gap-1.5 rounded-full text-xs font-semibold">
-                        <FileText className="h-3.5 w-3.5" />
-                        Fatura Aberta
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                {/* Ciclo da Fatura (Início, Fechamento, Vencimento) */}
-                <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40 text-xs">
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">
-                      Início do Ciclo
-                    </span>
-                    <span className="font-medium text-foreground">
-                      {formatarData(fatura.data_inicio_ciclo)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">
-                      Fechamento
-                    </span>
-                    <span className="font-medium text-foreground">
-                      {formatarData(fatura.data_fechamento_ciclo)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground block text-[11px]">
-                      Vencimento
-                    </span>
-                    <span className="font-medium text-foreground">
-                      {formatarData(fatura.data_vencimento_ciclo)}
-                    </span>
-                  </div>
-                </div>
+          {/* Conteúdo com Scroll */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-5">
+            {isLoading ? (
+              <div className="space-y-4">
+                <Skeleton className="h-20 w-full rounded-xl" />
+                <Skeleton className="h-12 w-full rounded-xl" />
+                <Skeleton className="h-12 w-full rounded-xl" />
               </div>
+            ) : !fatura ? (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                Não foi possível carregar a fatura para este período.
+              </div>
+            ) : (
+              <>
+                {/* Resumo da Fatura & Badges */}
+                <div className="rounded-2xl border border-border/50 bg-card/60 p-4 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <span className="text-xs text-muted-foreground uppercase font-medium tracking-wider">
+                        Valor Total da Fatura
+                      </span>
+                      <h3 className="text-2xl font-bold text-foreground">
+                        {formatarMoeda(fatura.valor_total)}
+                      </h3>
+                    </div>
 
-              {/* Lista de Itens da Fatura */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Lançamentos ({itensExibicao.length})
-                  </h4>
+                    <div className="flex items-center gap-2">
+                      {/* Badge de Status */}
+                      {fatura.status === StatusFatura.PAGA ? (
+                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 px-3 py-1 gap-1.5 rounded-full text-xs font-semibold">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          Fatura Paga
+                        </Badge>
+                      ) : fatura.status === StatusFatura.FECHADA ? (
+                        <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 px-3 py-1 gap-1.5 rounded-full text-xs font-semibold">
+                          <Clock className="h-3.5 w-3.5" />
+                          Fatura Fechada
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 px-3 py-1 gap-1.5 rounded-full text-xs font-semibold">
+                          <FileText className="h-3.5 w-3.5" />
+                          Fatura Aberta
+                        </Badge>
+                      )}
 
-                  {onLancarDespesa && cartao && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onOpenChange(false);
-                        onLancarDespesa(cartao);
-                      }}
-                      className="text-xs font-medium text-[#1F4E79] dark:text-blue-400 hover:underline cursor-pointer"
-                    >
-                      + Lançar Despesa
-                    </button>
-                  )}
+                      {/* Botão de Quitação Rápida */}
+                      {podePagarFatura && (
+                        <Button
+                          size="sm"
+                          onClick={() => setModalPagarAberta(true)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold gap-1.5 h-7 px-3 cursor-pointer shadow-sm"
+                        >
+                          <CreditCard className="h-3 w-3" />
+                          <span>Pagar Fatura</span>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Ciclo da Fatura (Início, Fechamento, Vencimento) */}
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40 text-xs">
+                    <div>
+                      <span className="text-muted-foreground block text-[11px]">
+                        Início do Ciclo
+                      </span>
+                      <span className="font-medium text-foreground">
+                        {formatarData(fatura.data_inicio_ciclo)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[11px]">
+                        Fechamento
+                      </span>
+                      <span className="font-medium text-foreground">
+                        {formatarData(fatura.data_fechamento_ciclo)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[11px]">
+                        Vencimento
+                      </span>
+                      <span className="font-medium text-foreground">
+                        {formatarData(fatura.data_vencimento_ciclo)}
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                {itensExibicao.length === 0 ? (
-                  <div className="text-center py-8 border border-dashed rounded-xl bg-accent/20">
-                    <Receipt className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
-                    <p className="text-xs font-medium text-muted-foreground">
-                      Nenhuma despesa lançada nesta fatura.
-                    </p>
+                {/* Lista de Itens da Fatura */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Lançamentos ({itensExibicao.length})
+                    </h4>
+
                     {onLancarDespesa && cartao && (
-                      <Button
-                        size="sm"
+                      <button
+                        type="button"
                         onClick={() => {
                           onOpenChange(false);
                           onLancarDespesa(cartao);
                         }}
-                        className="mt-3 text-xs rounded-xl bg-[#1F4E79] text-white"
+                        className="text-xs font-medium text-[#1F4E79] dark:text-blue-400 hover:underline cursor-pointer"
                       >
-                        <Plus className="h-3.5 w-3.5 mr-1" />
-                        Lançar Primeira Despesa
-                      </Button>
+                        + Lançar Despesa
+                      </button>
                     )}
                   </div>
-                ) : (
-                  <div className="space-y-2">
-                    {itensExibicao.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between p-3 rounded-xl border border-border/40 bg-card hover:bg-accent/30 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="h-9 w-9 rounded-lg flex items-center justify-center text-white shrink-0"
-                            style={{
-                              backgroundColor: item.categoriaCor,
-                            }}
-                          >
-                            <Tag className="h-4 w-4" />
+
+                  {itensExibicao.length === 0 ? (
+                    <div className="text-center py-8 border border-dashed rounded-xl bg-accent/20">
+                      <Receipt className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+                      <p className="text-xs font-medium text-muted-foreground">
+                        Nenhuma despesa lançada nesta fatura.
+                      </p>
+                      {onLancarDespesa && cartao && (
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            onOpenChange(false);
+                            onLancarDespesa(cartao);
+                          }}
+                          className="mt-3 text-xs rounded-xl bg-[#1F4E79] text-white"
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" />
+                          Lançar Primeira Despesa
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {itensExibicao.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-3 rounded-xl border border-border/40 bg-card hover:bg-accent/30 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="h-9 w-9 rounded-lg flex items-center justify-center text-white shrink-0"
+                              style={{
+                                backgroundColor: item.categoriaCor,
+                              }}
+                            >
+                              <Tag className="h-4 w-4" />
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-sm font-medium text-foreground leading-tight">
+                                  {item.descricao}
+                                </p>
+                                {item.isParcela && item.parcelaInfo && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] px-1.5 py-0 rounded-md font-medium border-0 bg-[#1F4E79]/10 text-[#1F4E79] dark:text-sky-400 gap-1"
+                                  >
+                                    <Layers className="h-2.5 w-2.5" />
+                                    <span>
+                                      Parcela {item.parcelaInfo.numero}/
+                                      {item.parcelaInfo.total}
+                                    </span>
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground flex-wrap">
+                                <span>{item.categoriaNome}</span>
+                                {item.subcategoriaNome && (
+                                  <>
+                                    <span>•</span>
+                                    <span>{item.subcategoriaNome}</span>
+                                  </>
+                                )}
+                                <span>•</span>
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3" />
+                                  {formatarData(item.data)}
+                                </span>
+                              </div>
+                            </div>
                           </div>
 
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-sm font-medium text-foreground leading-tight">
-                                {item.descricao}
-                              </p>
-                              {item.isParcela && item.parcelaInfo && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] px-1.5 py-0 rounded-md font-medium border-0 bg-[#1F4E79]/10 text-[#1F4E79] dark:text-sky-400 gap-1"
-                                >
-                                  <Layers className="h-2.5 w-2.5" />
-                                  <span>
-                                    Parcela {item.parcelaInfo.numero}/
-                                    {item.parcelaInfo.total}
-                                  </span>
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground flex-wrap">
-                              <span>{item.categoriaNome}</span>
-                              {item.subcategoriaNome && (
-                                <>
-                                  <span>•</span>
-                                  <span>{item.subcategoriaNome}</span>
-                                </>
-                              )}
-                              <span>•</span>
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {formatarData(item.data)}
-                              </span>
-                            </div>
+                          <div className="text-right shrink-0">
+                            <span className="text-sm font-bold text-red-600 dark:text-red-400 block">
+                              {formatarMoeda(item.valor)}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground capitalize">
+                              {item.status === "pago" ? "Liquidado" : "Pendente"}
+                            </span>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
-                        <div className="text-right shrink-0">
-                          <span className="text-sm font-bold text-red-600 dark:text-red-400 block">
-                            {formatarMoeda(item.valor)}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground capitalize">
-                            {item.status === "pago" ? "Liquidado" : "Pendente"}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+      {/* Modal de Pagamento de Fatura */}
+      <PagarFaturaModal
+        open={modalPagarAberta}
+        onOpenChange={setModalPagarAberta}
+        cartao={cartao}
+        fatura={fatura ?? null}
+      />
+    </>
   );
 }

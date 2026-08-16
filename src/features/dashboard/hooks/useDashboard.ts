@@ -2,17 +2,19 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { dashboardService } from "@/services/dashboard";
+import { RegimeDashboard } from "@/types/dashboard";
 
 export function useDashboard(
   familiaId?: number | null,
   mes?: number,
-  ano?: number
+  ano?: number,
+  regime: RegimeDashboard = "caixa"
 ) {
-  const queryKey = ["dashboard", familiaId, mes, ano];
+  const queryKey = ["dashboard", familiaId, mes, ano, regime];
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey,
-    queryFn: () => dashboardService.obter(mes, ano, familiaId ?? undefined),
+    queryFn: () => dashboardService.obter(mes, ano, familiaId ?? undefined, regime),
     enabled: true,
   });
 

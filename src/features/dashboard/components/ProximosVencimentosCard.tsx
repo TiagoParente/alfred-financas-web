@@ -97,10 +97,17 @@ export function ProximosVencimentosCard({
                   </p>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">
-                      {vencimento.categoria_nome || "Geral"}
+                      {vencimento.categoria_nome || (isCartao ? "Fatura de Cartão" : "Conta Bancária")}
                     </span>
-                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-border/50">
-                      {isCartao ? "Cartão" : "Conta"}
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] py-0 px-1.5 border-border/50 font-medium ${
+                        isCartao
+                          ? "bg-purple-500/10 text-purple-600 border-purple-500/20 dark:text-purple-400"
+                          : "bg-blue-500/10 text-blue-600 border-blue-500/20 dark:text-blue-400"
+                      }`}
+                    >
+                      {isCartao ? "Fatura" : "Conta"}
                     </Badge>
                   </div>
                 </div>

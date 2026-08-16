@@ -32,10 +32,11 @@ import { useState } from "react";
 export default function DashboardPage() {
   const { familiaAtiva } = useFamilias();
 
-  // Estado do Período (Mês e Ano)
+  // Estado do Período (Mês e Ano) e Regime
   const dataAtual = new Date();
   const [mes, setMes] = useState<number>(dataAtual.getMonth() + 1);
   const [ano, setAno] = useState<number>(dataAtual.getFullYear());
+  const [regime, setRegime] = useState<"caixa" | "competencia">("caixa");
 
   const {
     saldos,
@@ -46,7 +47,7 @@ export default function DashboardPage() {
     evolucaoInvestimentos,
     alfredInsights,
     isLoading,
-  } = useDashboard(familiaAtiva?.id, mes, ano);
+  } = useDashboard(familiaAtiva?.id, mes, ano, regime);
 
   const { contasFixas } = useContasFixas(familiaAtiva?.id, true);
   const { resumo: resumoCartoes } = useCartoes(familiaAtiva?.id);
@@ -121,6 +122,34 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
+          {/* Seletor de Regime (Caixa vs Competência) */}
+          <div className="flex items-center p-1 bg-card border border-border/50 rounded-xl shadow-2xs">
+            <button
+              type="button"
+              onClick={() => setRegime("caixa")}
+              title="Regime de Caixa: Despesas de conta e faturas de cartão computadas no mês do vencimento/pagamento"
+              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                regime === "caixa"
+                  ? "bg-[#1F4E79] text-white shadow-2xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Caixa (Fluxo Real)
+            </button>
+            <button
+              type="button"
+              onClick={() => setRegime("competencia")}
+              title="Regime de Competência: Compras computadas no mês em que foram efetuadas"
+              className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all ${
+                regime === "competencia"
+                  ? "bg-[#1F4E79] text-white shadow-2xs"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Competência
+            </button>
+          </div>
+
           {/* Seletor de Período */}
           <div className="flex items-center gap-2 bg-card border border-border/50 rounded-xl px-3 py-1.5 shadow-2xs">
             <Calendar className="h-4 w-4 text-[#1F4E79]" />
@@ -189,7 +218,7 @@ export default function DashboardPage() {
           <GraficoReceitasDespesas
             mensal={mensal}
             contasFixas={contasFixas}
-            faturaCartoesTotal={resumoCartoes.fatura_atual_total}
+            faturaCartoesTotal={mensal.caixa?.faturas_cartao ?? resumoCartoes.fatura_atual_total}
           />
         )}
 

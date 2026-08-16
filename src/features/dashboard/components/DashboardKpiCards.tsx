@@ -63,9 +63,14 @@ export function DashboardKpiCards({ saldos, mensal }: DashboardKpiCardsProps) {
       {/* 3. Despesas do Mês */}
       <div className="rounded-[16px] border border-border/50 bg-card p-5 shadow-sm space-y-3 transition-all hover:border-red-500/30">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-            Despesas do Mês
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+              Despesas do Mês
+            </span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-accent text-muted-foreground">
+              {mensal.regime === "competencia" ? "Competência" : "Caixa"}
+            </span>
+          </div>
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-500/10 text-red-500">
             <TrendingDown className="h-4 w-4" />
           </div>
@@ -74,9 +79,19 @@ export function DashboardKpiCards({ saldos, mensal }: DashboardKpiCardsProps) {
           <span className="text-2xl font-bold text-red-500 tracking-tight">
             {formatarMoeda(mensal.total_despesas)}
           </span>
-          <p className="text-xs text-muted-foreground mt-1">
-            Saídas efetuadas
-          </p>
+          <div className="text-[11px] text-muted-foreground mt-1 flex flex-col gap-0.5">
+            {mensal.regime === "competencia" && mensal.competencia ? (
+              <span>
+                Contas: {formatarMoeda(mensal.competencia.despesas_contas)} | Compras: {formatarMoeda(mensal.competencia.compras_cartao ?? 0)}
+              </span>
+            ) : mensal.caixa ? (
+              <span>
+                Contas: {formatarMoeda(mensal.caixa.despesas_contas)} | Faturas: {formatarMoeda(mensal.caixa.faturas_cartao ?? 0)}
+              </span>
+            ) : (
+              <span>Saídas efetuadas</span>
+            )}
+          </div>
         </div>
       </div>
 

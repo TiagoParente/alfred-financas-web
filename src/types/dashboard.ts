@@ -8,17 +8,30 @@ export interface DashboardSaldos {
   total_contas: number;
 }
 
+export type RegimeDashboard = "caixa" | "competencia";
+
+export interface DetalheRegimeMensal {
+  total_despesas: number;
+  balanco_mensal: number;
+  despesas_contas: number;
+  faturas_cartao?: number;
+  compras_cartao?: number;
+}
+
 export interface DashboardMensal {
   mes: number;
   ano: number;
+  regime?: RegimeDashboard;
   total_receitas: number;
   total_despesas: number;
   balanco_mensal: number;
   total_investimentos: number;
+  caixa?: DetalheRegimeMensal;
+  competencia?: DetalheRegimeMensal;
 }
 
 export interface ProximoVencimento {
-  id: number;
+  id: number | string;
   descricao: string;
   valor: number;
   data_vencimento: string | null;

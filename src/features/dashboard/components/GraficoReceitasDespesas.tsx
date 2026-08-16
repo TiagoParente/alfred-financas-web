@@ -155,11 +155,16 @@ export function GraficoReceitasDespesas({
             <h3 className="text-base font-bold text-foreground">
               Fluxo de Caixa & Projeções
             </h3>
+            {mensal.regime && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-accent text-muted-foreground">
+                Regime de {mensal.regime === "competencia" ? "Competência" : "Caixa"}
+              </span>
+            )}
           </div>
           <p className="text-xs text-muted-foreground font-medium">
             {modoProjecao
-              ? "Comparativo do mês atual e tendência dos próximos 3 meses"
-              : "Receitas, despesas e saldo do mês selecionado"}
+              ? `Comparativo de ${mensal.regime === "competencia" ? "gastos efetuados" : "saídas no caixa"} e projeção dos próximos 3 meses`
+              : `Receitas, despesas e saldo (${mensal.regime === "competencia" ? "data de compra" : "vencimento/pagamento"})`}
           </p>
         </div>
 
