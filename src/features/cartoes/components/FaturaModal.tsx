@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -55,8 +55,35 @@ export function FaturaModal({
   cartao,
   onLancarDespesa,
 }: FaturaModalProps) {
-  // Data de referência padrão: ano-mês atual
+  // Data de referência padrão: ano-mês da fatura aberta
   const [dataRef, setDataRef] = useState<Date>(new Date());
+
+  useEffect(() => {
+    if (open && cartao) {
+      const hoje = new Date();
+      const diaHoje = hoje.getDate();
+      const anoHoje = hoje.getFullYear();
+      const mesHoje = hoje.getMonth();
+
+      let dataInicial: Date;
+
+      if (cartao.dia_fechamento < cartao.dia_vencimento) {
+        if (diaHoje <= cartao.dia_fechamento) {
+          dataInicial = new Date(anoHoje, mesHoje, 1);
+        } else {
+          dataInicial = new Date(anoHoje, mesHoje + 1, 1);
+        }
+      } else {
+        if (diaHoje <= cartao.dia_fechamento) {
+          dataInicial = new Date(anoHoje, mesHoje + 1, 1);
+        } else {
+          dataInicial = new Date(anoHoje, mesHoje + 2, 1);
+        }
+      }
+
+      setDataRef(dataInicial);
+    }
+  }, [open, cartao]);
 
   const ano = dataRef.getFullYear();
   const mes = String(dataRef.getMonth() + 1).padStart(2, "0");
