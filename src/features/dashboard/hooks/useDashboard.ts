@@ -35,6 +35,7 @@ export function useDashboard(
       total_investimentos: 0,
     },
     proximosVencimentos: data?.proximos_vencimentos ?? [],
+    projecaoFluxo: data?.projecao_fluxo ?? data?.mensal?.projecao_fluxo ?? [],
     resumoOrcamentos: data?.resumo_orcamentos,
     orcamentos: data?.orcamentos ?? [],
     resumoMetas: data?.resumo_metas,

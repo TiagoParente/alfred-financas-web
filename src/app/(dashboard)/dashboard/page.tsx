@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const {
     saldos,
     mensal,
+    projecaoFluxo,
     proximosVencimentos,
     orcamentos,
     metas,
@@ -217,6 +218,7 @@ export default function DashboardPage() {
         ) : (
           <GraficoReceitasDespesas
             mensal={mensal}
+            projecaoFluxo={projecaoFluxo}
             contasFixas={contasFixas}
             faturaCartoesTotal={mensal.caixa?.faturas_cartao ?? resumoCartoes.fatura_atual_total}
           />

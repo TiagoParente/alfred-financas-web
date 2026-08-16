@@ -18,6 +18,30 @@ export interface DetalheRegimeMensal {
   compras_cartao?: number;
 }
 
+export interface ProjecaoFluxoDetalhes {
+  receitas_fixas?: number;
+  receitas_avulsas?: number;
+  despesas_contas?: number;
+  despesas_contas_fixas?: number;
+  despesas_contas_avulsas?: number;
+  faturas_cartao?: number;
+  parcelas_cartao?: number;
+  contas_fixas_cartao?: number;
+  compras_cartao?: number;
+}
+
+export interface ProjecaoFluxoItem {
+  mes: number;
+  ano: number;
+  mes_ano: string;
+  nome_mes: string;
+  total_receitas: number;
+  total_despesas: number;
+  balanco_mensal: number;
+  is_projecao: boolean;
+  detalhes?: ProjecaoFluxoDetalhes;
+}
+
 export interface DashboardMensal {
   mes: number;
   ano: number;
@@ -28,6 +52,7 @@ export interface DashboardMensal {
   total_investimentos: number;
   caixa?: DetalheRegimeMensal;
   competencia?: DetalheRegimeMensal;
+  projecao_fluxo?: ProjecaoFluxoItem[];
 }
 
 export interface ProximoVencimento {
@@ -77,6 +102,7 @@ export interface DashboardData {
   familia_nome: string;
   saldos: DashboardSaldos;
   mensal: DashboardMensal;
+  projecao_fluxo?: ProjecaoFluxoItem[];
   proximos_vencimentos: ProximoVencimento[];
   resumo_orcamentos: ResumoOrcamentos;
   orcamentos: Orcamento[];

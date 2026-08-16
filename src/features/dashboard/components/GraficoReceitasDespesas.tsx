@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { DashboardMensal } from "@/types/dashboard";
+import { DashboardMensal, ProjecaoFluxoItem } from "@/types/dashboard";
 import { ContaFixa } from "@/types/contasFixas";
 import { TipoMovimentacao } from "@/types/movimentacoes";
 import { formatarMoeda } from "@/utils/formatters";
@@ -17,10 +17,11 @@ import {
   Legend,
   Cell,
 } from "recharts";
-import { BarChart3, Sparkles, Calendar } from "lucide-react";
+import { BarChart3, Sparkles, Calendar, CreditCard, Landmark } from "lucide-react";
 
 interface GraficoReceitasDespesasProps {
   mensal: DashboardMensal;
+  projecaoFluxo?: ProjecaoFluxoItem[];
   contasFixas?: ContaFixa[];
   faturaCartoesTotal?: number;
 }
@@ -30,16 +31,18 @@ const NOMES_MESES = [
   "Jul", "Ago", "Set", "Out", "Nov", "Dez"
 ];
 
-// Custom Tooltip com suporte a indicador de Projeção vs Realizado
+// Custom Tooltip com suporte a indicador de Projeção vs Realizado e detalhamento de Cartões
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    const isProjecao = payload[0]?.payload?.isProjecao;
+    const rawPayload = payload[0]?.payload;
+    const isProjecao = rawPayload?.isProjecao;
+    const detalhes = rawPayload?.detalhes;
 
     return (
-      <div className="rounded-xl border border-border bg-card p-3.5 shadow-lg text-xs space-y-2 max-w-[240px]">
+      <div className="rounded-xl border border-border bg-card p-3.5 shadow-xl text-xs space-y-2.5 max-w-[270px]">
         <div className="flex items-center justify-between border-b border-border/40 pb-1.5 gap-2">
-          <span className="font-bold text-foreground">{label}</span>
+          <span className="font-bold text-foreground text-sm">{label}</span>
           <span
             className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
               isProjecao
@@ -51,10 +54,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           </span>
         </div>
 
+        {/* Linhas principais */}
         <div className="space-y-1.5">
           {payload.map((item: any, index: number) => (
             <div key={index} className="flex items-center justify-between gap-4">
-              <span style={{ color: item.color }} className="font-medium">
+              <span style={{ color: item.color }} className="font-semibold">
                 {item.name}:
               </span>
               <span className="font-bold text-foreground">
@@ -64,9 +68,52 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           ))}
         </div>
 
+        {/* Detalhamento das Despesas (Cartão vs Conta Bancária) */}
+        {detalhes && (detalhes.faturas_cartao !== undefined || detalhes.despesas_contas !== undefined) && (
+          <div className="pt-2 border-t border-border/40 space-y-1 text-[11px] text-muted-foreground">
+            <p className="font-semibold text-foreground text-[10px] uppercase tracking-wider">
+              Composição das Despesas:
+            </p>
+            {detalhes.faturas_cartao !== undefined && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1">
+                  <CreditCard className="h-3 w-3 text-[#1F4E79] dark:text-sky-400 shrink-0" />
+                  <span>Cartões de Crédito:</span>
+                </span>
+                <span className="font-semibold text-foreground">
+                  {formatarMoeda(detalhes.faturas_cartao)}
+                </span>
+              </div>
+            )}
+            {detalhes.parcelas_cartao !== undefined && detalhes.parcelas_cartao > 0 && (
+              <div className="flex items-center justify-between gap-2 pl-4 text-[10px] text-muted-foreground/80">
+                <span>↳ Parcelas de compras:</span>
+                <span>{formatarMoeda(detalhes.parcelas_cartao)}</span>
+              </div>
+            )}
+            {detalhes.contas_fixas_cartao !== undefined && detalhes.contas_fixas_cartao > 0 && (
+              <div className="flex items-center justify-between gap-2 pl-4 text-[10px] text-muted-foreground/80">
+                <span>↳ Fixas / Assinaturas no cartão:</span>
+                <span>{formatarMoeda(detalhes.contas_fixas_cartao)}</span>
+              </div>
+            )}
+            {detalhes.despesas_contas !== undefined && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1">
+                  <Landmark className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <span>Débito em Conta:</span>
+                </span>
+                <span className="font-semibold text-foreground">
+                  {formatarMoeda(detalhes.despesas_contas)}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
         {isProjecao && (
           <p className="text-[10px] text-muted-foreground pt-1 border-t border-border/30 italic">
-            * Baseado em contas fixas ativas e faturas de cartão.
+            * Projeção calculada com faturas de cartão (parcelas + recorrentes) e contas fixas.
           </p>
         )}
       </div>
@@ -77,12 +124,13 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function GraficoReceitasDespesas({
   mensal,
+  projecaoFluxo = [],
   contasFixas = [],
   faturaCartoesTotal = 0,
 }: GraficoReceitasDespesasProps) {
   const [modoProjecao, setModoProjecao] = useState<boolean>(true);
 
-  // Calcula totais recorrentes de contas fixas ativas
+  // Calcula totais recorrentes de contas fixas ativas como fallback
   const receitasFixasTotal = useMemo(() => {
     return contasFixas
       .filter((c) => c.ativa && c.tipo === TipoMovimentacao.RECEITA)
@@ -98,7 +146,6 @@ export function GraficoReceitasDespesas({
   // Monta a série temporal (Mês Atual + Próximos 3 Meses)
   const dados = useMemo(() => {
     const mesAtualNum = mensal.mes || new Date().getMonth() + 1;
-    const anoAtualNum = mensal.ano || new Date().getFullYear();
 
     // Se estiver em modo Mês Atual, retorna apenas o mês selecionado
     if (!modoProjecao) {
@@ -109,10 +156,28 @@ export function GraficoReceitasDespesas({
           Despesas: mensal.total_despesas,
           "Saldo do Mês": mensal.balanco_mensal,
           isProjecao: false,
+          detalhes: {
+            despesas_contas: mensal.caixa?.despesas_contas ?? mensal.competencia?.despesas_contas,
+            faturas_cartao: mensal.caixa?.faturas_cartao,
+            compras_cartao: mensal.competencia?.compras_cartao,
+          },
         },
       ];
     }
 
+    // Se o backend retornou a projeção calculada, utiliza diretamente
+    if (projecaoFluxo && projecaoFluxo.length > 0) {
+      return projecaoFluxo.map((item) => ({
+        name: item.nome_mes,
+        Receitas: item.total_receitas,
+        Despesas: item.total_despesas,
+        "Saldo do Mês": item.balanco_mensal,
+        isProjecao: item.is_projecao,
+        detalhes: item.detalhes,
+      }));
+    }
+
+    // Fallback caso a API ainda não tenha retornado a projeção
     const serie = [];
 
     // Mês 0: Mês Selecionado / Atual (Dados Reais do Backend)
@@ -122,13 +187,15 @@ export function GraficoReceitasDespesas({
       Despesas: mensal.total_despesas,
       "Saldo do Mês": mensal.balanco_mensal,
       isProjecao: false,
+      detalhes: {
+        despesas_contas: mensal.caixa?.despesas_contas,
+        faturas_cartao: faturaCartoesTotal,
+      },
     });
 
     // Meses +1, +2, +3: Projeção Estimada
     for (let i = 1; i <= 3; i++) {
       const idxMes = (mesAtualNum - 1 + i) % 12;
-
-      // Estimativa: Receitas Fixas vs Despesas Fixas + Fatura de Cartões
       const receitaProjetada = receitasFixasTotal;
       const despesaProjetada = despesasFixasTotal + faturaCartoesTotal;
       const saldoProjetado = receitaProjetada - despesaProjetada;
@@ -139,11 +206,22 @@ export function GraficoReceitasDespesas({
         Despesas: despesaProjetada,
         "Saldo do Mês": saldoProjetado,
         isProjecao: true,
+        detalhes: {
+          despesas_contas: despesasFixasTotal,
+          faturas_cartao: faturaCartoesTotal,
+        },
       });
     }
 
     return serie;
-  }, [mensal, modoProjecao, receitasFixasTotal, despesasFixasTotal, faturaCartoesTotal]);
+  }, [
+    mensal,
+    modoProjecao,
+    projecaoFluxo,
+    receitasFixasTotal,
+    despesasFixasTotal,
+    faturaCartoesTotal,
+  ]);
 
   return (
     <div className="rounded-[16px] border border-border/50 bg-card p-6 shadow-sm space-y-4">
@@ -155,16 +233,11 @@ export function GraficoReceitasDespesas({
             <h3 className="text-base font-bold text-foreground">
               Fluxo de Caixa & Projeções
             </h3>
-            {mensal.regime && (
-              <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-accent text-muted-foreground">
-                Regime de {mensal.regime === "competencia" ? "Competência" : "Caixa"}
-              </span>
-            )}
           </div>
           <p className="text-xs text-muted-foreground font-medium">
             {modoProjecao
-              ? `Comparativo de ${mensal.regime === "competencia" ? "gastos efetuados" : "saídas no caixa"} e projeção dos próximos 3 meses`
-              : `Receitas, despesas e saldo (${mensal.regime === "competencia" ? "data de compra" : "vencimento/pagamento"})`}
+              ? "Comparativo consolidado e projeção dos próximos 3 meses com faturas e contas fixas"
+              : "Receitas, despesas e saldo consolidado do mês"}
           </p>
         </div>
 
@@ -289,7 +362,7 @@ export function GraficoReceitasDespesas({
           </div>
           <div className="flex items-center gap-1 text-[#1F4E79] font-medium">
             <Calendar className="h-3.5 w-3.5" />
-            <span>Estimativa baseada em contas fixas & cartões</span>
+            <span>Projeção considera faturas de cartão (parcelas + recorrentes) & contas fixas</span>
           </div>
         </div>
       )}
