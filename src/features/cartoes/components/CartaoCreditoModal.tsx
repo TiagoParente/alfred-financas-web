@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,19 +32,46 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// ─── Helpers de formatação de moeda ───────────────────────────────────────────
+
+/** Converte string formatada ("1.234,56") → número (1234.56) */
+function parseMoeda(valorFormatado: string): number {
+  const apenasDigitos = valorFormatado.replace(/\D/g, "");
+  return parseFloat((parseInt(apenasDigitos, 10) / 100).toFixed(2)) || 0;
+}
+
+/** Formata número (1234.56) → string BRL ("R$ 1.234,56") */
+function formatarMoedaMascara(valor: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  }).format(valor);
+}
+
+/** Máscara de entrada: transforma o que o usuário digita em "R$ X.XXX,XX" */
+function aplicarMascaraMoeda(inputValue: string): string {
+  const apenasDigitos = inputValue.replace(/\D/g, "");
+  if (!apenasDigitos || apenasDigitos === "0") return "";
+  const numero = parseInt(apenasDigitos, 10) / 100;
+  return formatarMoedaMascara(numero);
+}
+
 const cartaoCreditoSchema = z.object({
   nome: z.string().min(2, "O nome deve ter pelo menos 2 caracteres"),
   banco_id: z.string().optional(),
   bandeira: z.nativeEnum(BandeiraCartao).optional(),
-  limite: z.coerce.number().min(0, "O limite deve ser maior ou igual a zero"),
+  limite: z.coerce
+    .number({ invalid_type_error: "Informe o limite do cartão" })
+    .min(0, "O limite deve ser maior ou igual a zero"),
   dia_fechamento: z.coerce
-    .number()
-    .min(1, "Dia inválido")
-    .max(31, "Dia inválido"),
+    .number({ invalid_type_error: "Informe o dia do fechamento" })
+    .min(1, "Informe o dia do fechamento (1 a 31)")
+    .max(31, "Dia inválido (1 a 31)"),
   dia_vencimento: z.coerce
-    .number()
-    .min(1, "Dia inválido")
-    .max(31, "Dia inválido"),
+    .number({ invalid_type_error: "Informe o dia do vencimento" })
+    .min(1, "Informe o dia do vencimento (1 a 31)")
+    .max(31, "Dia inválido (1 a 31)"),
   cor_hex: z.string().optional(),
 });
 
@@ -79,6 +106,7 @@ export function CartaoCreditoModal({
   isSubmitting,
 }: CartaoCreditoModalProps) {
   const { data: bancos = [] } = useBancos();
+  const [limiteDisplay, setLimiteDisplay] = useState("");
 
   const {
     register,
@@ -93,10 +121,10 @@ export function CartaoCreditoModal({
     defaultValues: {
       nome: "",
       banco_id: "",
-      bandeira: BandeiraCartao.VISA,
-      limite: 1000,
-      dia_fechamento: 1,
-      dia_vencimento: 10,
+      bandeira: undefined,
+      limite: "" as unknown as number,
+      dia_fechamento: "" as unknown as number,
+      dia_vencimento: "" as unknown as number,
       cor_hex: "#1F4E79",
     },
   });
@@ -108,25 +136,39 @@ export function CartaoCreditoModal({
   // Preenche dados ao editar ou redefinir ao fechar/abrir
   useEffect(() => {
     if (cartaoEmEdicao) {
+      const limiteNum =
+        cartaoEmEdicao.limite !== undefined && cartaoEmEdicao.limite !== null
+          ? Number(cartaoEmEdicao.limite)
+          : 0;
+
       reset({
         nome: cartaoEmEdicao.nome,
         banco_id: cartaoEmEdicao.banco_id ? String(cartaoEmEdicao.banco_id) : "",
-        bandeira: cartaoEmEdicao.bandeira || BandeiraCartao.VISA,
-        limite: cartaoEmEdicao.limite,
+        bandeira: cartaoEmEdicao.bandeira || undefined,
+        limite: limiteNum,
         dia_fechamento: cartaoEmEdicao.dia_fechamento,
         dia_vencimento: cartaoEmEdicao.dia_vencimento,
         cor_hex: cartaoEmEdicao.cor_hex || "#1F4E79",
       });
+
+      setLimiteDisplay(
+        limiteNum > 0
+          ? formatarMoedaMascara(limiteNum)
+          : cartaoEmEdicao.limite === 0
+          ? "R$ 0,00"
+          : ""
+      );
     } else {
       reset({
         nome: "",
         banco_id: "",
-        bandeira: BandeiraCartao.VISA,
-        limite: 1000,
-        dia_fechamento: 1,
-        dia_vencimento: 10,
+        bandeira: undefined,
+        limite: "" as unknown as number,
+        dia_fechamento: "" as unknown as number,
+        dia_vencimento: "" as unknown as number,
         cor_hex: "#1F4E79",
       });
+      setLimiteDisplay("");
     }
   }, [cartaoEmEdicao, open, reset]);
 
@@ -232,14 +274,14 @@ export function CartaoCreditoModal({
             <div className="space-y-1.5">
               <Label>Bandeira do Cartão</Label>
               <Select
-                value={bandeiraAtual || BandeiraCartao.VISA}
-                onValueChange={(val) => setValue("bandeira", val as BandeiraCartao)}
+                value={bandeiraAtual || undefined}
+                onValueChange={(val) => setValue("bandeira", (val || undefined) as BandeiraCartao)}
               >
                 <SelectTrigger className="rounded-[10px]">
                   <SelectValue placeholder="Selecione a bandeira">
                     {bandeiraAtual
                       ? BandeiraCartaoDescricao[bandeiraAtual]
-                      : "Visa"}
+                      : "Selecione a bandeira"}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
@@ -258,10 +300,17 @@ export function CartaoCreditoModal({
             <Label htmlFor="limite">Limite Total (R$) *</Label>
             <Input
               id="limite"
-              type="number"
-              step="0.01"
-              placeholder="5000,00"
-              {...register("limite")}
+              type="text"
+              inputMode="numeric"
+              placeholder="R$ 0,00"
+              value={limiteDisplay}
+              onChange={(e) => {
+                const mascarado = aplicarMascaraMoeda(e.target.value);
+                setLimiteDisplay(mascarado);
+                setValue("limite", mascarado ? parseMoeda(mascarado) : ("" as unknown as number), {
+                  shouldValidate: true,
+                });
+              }}
               className="rounded-[10px]"
             />
             {errors.limite && (

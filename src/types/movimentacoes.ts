@@ -57,6 +57,24 @@ export interface Movimentacao {
   data_pagamento?: string | null;
   observacao?: string | null;
   anexo_url?: string | null;
+  parcelas?: Parcela[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Parcela {
+  id: number;
+  familia_id: number;
+  movimentacao_id: number;
+  cartao_credito_id: number;
+  numero_parcela: number;
+  total_parcelas: number;
+  valor: number;
+  data_vencimento?: string | null;
+  mes_fatura?: string | null;
+  status: StatusMovimentacao | string;
+  status_descricao?: string;
+  data_pagamento?: string | null;
   created_at?: string;
   updated_at?: string;
 }
@@ -89,6 +107,7 @@ export interface CriarMovimentacaoPayload {
   data_pagamento?: string | null;
   observacao?: string | null;
   anexo_url?: string | null;
+  total_parcelas?: number | null;
 }
 
 export interface AtualizarMovimentacaoPayload {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -11,6 +11,7 @@ import {
   Clock,
   FileText,
   Plus,
+  Layers,
 } from "lucide-react";
 import { CartaoCredito, StatusFatura } from "@/types/cartoes";
 import { useFaturaCartao } from "../hooks/useFaturaCartao";
@@ -24,6 +25,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+
+interface ItemFaturaExibicao {
+  id: string;
+  descricao: string;
+  categoriaNome: string;
+  categoriaCor: string;
+  subcategoriaNome?: string | null;
+  data: string;
+  valor: number;
+  status: string;
+  isParcela: boolean;
+  parcelaInfo?: {
+    numero: number;
+    total: number;
+  };
+}
 
 interface FaturaModalProps {
   open: boolean;
@@ -64,6 +81,44 @@ export function FaturaModal({
   const handleProximoMes = () => {
     setDataRef(new Date(ano, dataRef.getMonth() + 1, 1));
   };
+
+  // Lista unificada de lançamentos (compras normais + parcelas da fatura)
+  const itensExibicao = useMemo(() => {
+    if (!fatura) return [];
+
+    const listaItens: ItemFaturaExibicao[] = [
+      ...(fatura.itens || []).map((item) => ({
+        id: `item-${item.id}`,
+        descricao: item.descricao,
+        categoriaNome: item.categoria?.nome ?? "Sem Categoria",
+        categoriaCor: item.categoria?.cor_hex || "#1F4E79",
+        subcategoriaNome: item.subcategoria?.nome,
+        data: item.data_movimentacao,
+        valor: Number(item.valor),
+        status: item.status,
+        isParcela: false,
+      })),
+      ...(fatura.parcelas || []).map((parcela) => ({
+        id: `parcela-${parcela.id}`,
+        descricao: parcela.movimentacao?.descricao || "Compra Parcelada",
+        categoriaNome: parcela.movimentacao?.categoria?.nome ?? "Sem Categoria",
+        categoriaCor: parcela.movimentacao?.categoria?.cor_hex || "#1F4E79",
+        subcategoriaNome: parcela.movimentacao?.subcategoria?.nome,
+        data: parcela.movimentacao?.data_movimentacao || parcela.data_vencimento,
+        valor: Number(parcela.valor),
+        status: parcela.status,
+        isParcela: true,
+        parcelaInfo: {
+          numero: parcela.numero_parcela,
+          total: parcela.total_parcelas,
+        },
+      })),
+    ];
+
+    return listaItens.sort(
+      (a, b) => new Date(a.data).getTime() - new Date(b.data).getTime()
+    );
+  }, [fatura]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -210,7 +265,7 @@ export function FaturaModal({
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Lançamentos ({fatura.total_itens})
+                    Lançamentos ({itensExibicao.length})
                   </h4>
 
                   {onLancarDespesa && cartao && (
@@ -227,7 +282,7 @@ export function FaturaModal({
                   )}
                 </div>
 
-                {fatura.itens.length === 0 ? (
+                {itensExibicao.length === 0 ? (
                   <div className="text-center py-8 border border-dashed rounded-xl bg-accent/20">
                     <Receipt className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
                     <p className="text-xs font-medium text-muted-foreground">
@@ -249,46 +304,57 @@ export function FaturaModal({
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {fatura.itens.map((item) => (
+                    {itensExibicao.map((item) => (
                       <div
                         key={item.id}
                         className="flex items-center justify-between p-3 rounded-xl border border-border/40 bg-card hover:bg-accent/30 transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <div
-                            className="h-9 w-9 rounded-lg flex items-center justify-center text-white"
+                            className="h-9 w-9 rounded-lg flex items-center justify-center text-white shrink-0"
                             style={{
-                              backgroundColor:
-                                item.categoria?.cor_hex || "#1F4E79",
+                              backgroundColor: item.categoriaCor,
                             }}
                           >
                             <Tag className="h-4 w-4" />
                           </div>
 
-                          <div>
-                            <p className="text-sm font-medium text-foreground leading-tight">
-                              {item.descricao}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground">
-                              <span>
-                                {item.categoria?.nome ?? "Sem Categoria"}
-                              </span>
-                              {item.subcategoria && (
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-medium text-foreground leading-tight">
+                                {item.descricao}
+                              </p>
+                              {item.isParcela && item.parcelaInfo && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] px-1.5 py-0 rounded-md font-medium border-0 bg-[#1F4E79]/10 text-[#1F4E79] dark:text-sky-400 gap-1"
+                                >
+                                  <Layers className="h-2.5 w-2.5" />
+                                  <span>
+                                    Parcela {item.parcelaInfo.numero}/
+                                    {item.parcelaInfo.total}
+                                  </span>
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground flex-wrap">
+                              <span>{item.categoriaNome}</span>
+                              {item.subcategoriaNome && (
                                 <>
                                   <span>•</span>
-                                  <span>{item.subcategoria.nome}</span>
+                                  <span>{item.subcategoriaNome}</span>
                                 </>
                               )}
                               <span>•</span>
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-3 w-3" />
-                                {formatarData(item.data_movimentacao)}
+                                {formatarData(item.data)}
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="text-right">
+                        <div className="text-right shrink-0">
                           <span className="text-sm font-bold text-red-600 dark:text-red-400 block">
                             {formatarMoeda(item.valor)}
                           </span>

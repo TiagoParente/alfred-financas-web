@@ -64,6 +64,21 @@ export interface ListarCartoesCreditoResponse {
   resumo: ResumoCartoes;
 }
 
+export interface ParcelaFatura {
+  id: number;
+  familia_id: number;
+  movimentacao_id: number;
+  cartao_credito_id: number;
+  numero_parcela: number;
+  total_parcelas: number;
+  valor: number;
+  data_vencimento: string;
+  mes_fatura: string;
+  status: string;
+  status_descricao?: string;
+  movimentacao?: Movimentacao;
+}
+
 export interface DetalhesFaturaResponse {
   cartao_id: number;
   mes_ano_referencia: string;
@@ -75,6 +90,7 @@ export interface DetalhesFaturaResponse {
   valor_total: number;
   total_itens: number;
   itens: Movimentacao[];
+  parcelas?: ParcelaFatura[];
 }
 
 export interface CriarCartaoCreditoPayload {

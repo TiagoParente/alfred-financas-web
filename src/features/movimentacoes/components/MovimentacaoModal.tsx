@@ -16,6 +16,8 @@ import {
   Landmark,
   HelpCircle,
   Sparkles,
+  Calculator,
+  Layers,
 } from "lucide-react";
 import {
   Dialog,
@@ -48,6 +50,10 @@ import { useCategorias } from "@/features/categorias/hooks/useCategorias";
 import { ContaBancaria } from "@/types/contas";
 import { CartaoCredito } from "@/types/cartoes";
 import { cn } from "@/lib/utils";
+
+const OPCOES_PARCELAS = [
+  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 36, 48, 60, 72,
+];
 
 // ─── Helpers de formatação de moeda ───────────────────────────────────────────
 
@@ -92,6 +98,7 @@ const movimentacaoSchema = z
     data_movimentacao: z.string().min(1, "Informe a data da movimentação"),
     data_vencimento: z.string().nullable().optional(),
     observacao: z.string().nullable().optional(),
+    total_parcelas: z.number().int().min(1).max(72).nullable().optional(),
   })
   .refine(
     (data) => {
@@ -170,6 +177,9 @@ export function MovimentacaoModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [origemPagamento, setOrigemPagamento] = useState<"conta" | "cartao">("conta");
   const [valorDisplay, setValorDisplay] = useState("");
+  const [totalParcelas, setTotalParcelas] = useState(1);
+  const [modoEntradaValor, setModoEntradaValor] = useState<"total" | "parcela">("total");
+  const [valorParcelaDisplay, setValorParcelaDisplay] = useState("");
   const [showInfoStatus, setShowInfoStatus] = useState(false);
   const descricaoRef = useRef<HTMLInputElement>(null);
 
@@ -196,6 +206,7 @@ export function MovimentacaoModal({
       data_movimentacao: "",
       data_vencimento: "",
       observacao: "",
+      total_parcelas: 1,
     },
   });
 
@@ -355,9 +366,14 @@ export function MovimentacaoModal({
   useEffect(() => {
     if (open) {
       const hoje = new Date().toISOString().split("T")[0];
+      setModoEntradaValor("total");
+
       if (movimentacaoParaEditar) {
         const usaCartao = Boolean(movimentacaoParaEditar.cartao_credito_id);
+        const parcelasCount = movimentacaoParaEditar.parcelas?.length || 1;
         setOrigemPagamento(usaCartao ? "cartao" : "conta");
+        setTotalParcelas(parcelasCount);
+
         reset({
           descricao: movimentacaoParaEditar.descricao,
           valor: Number(movimentacaoParaEditar.valor),
@@ -372,14 +388,18 @@ export function MovimentacaoModal({
           data_vencimento:
             movimentacaoParaEditar.data_vencimento || movimentacaoParaEditar.data_movimentacao,
           observacao: movimentacaoParaEditar.observacao || "",
+          total_parcelas: parcelasCount,
         });
-        setValorDisplay(
-          movimentacaoParaEditar.valor > 0
-            ? formatarMoedaMascara(Number(movimentacaoParaEditar.valor))
-            : ""
+
+        const v = Number(movimentacaoParaEditar.valor);
+        setValorDisplay(v > 0 ? formatarMoedaMascara(v) : "");
+        setValorParcelaDisplay(
+          v > 0 && parcelasCount > 1 ? formatarMoedaMascara(v / parcelasCount) : ""
         );
       } else if (cartaoCreditoIdPadrao) {
         setOrigemPagamento("cartao");
+        setTotalParcelas(1);
+        setValorParcelaDisplay("");
         reset({
           descricao: "",
           valor: undefined,
@@ -393,10 +413,13 @@ export function MovimentacaoModal({
           data_movimentacao: hoje,
           data_vencimento: hoje,
           observacao: "",
+          total_parcelas: 1,
         });
         setValorDisplay("");
       } else if (contaBancariaIdPadrao) {
         setOrigemPagamento("conta");
+        setTotalParcelas(1);
+        setValorParcelaDisplay("");
         reset({
           descricao: "",
           valor: undefined,
@@ -410,10 +433,13 @@ export function MovimentacaoModal({
           data_movimentacao: hoje,
           data_vencimento: hoje,
           observacao: "",
+          total_parcelas: 1,
         });
         setValorDisplay("");
       } else {
         setOrigemPagamento("conta");
+        setTotalParcelas(1);
+        setValorParcelaDisplay("");
         reset({
           descricao: "",
           valor: undefined,
@@ -427,6 +453,7 @@ export function MovimentacaoModal({
           data_movimentacao: hoje,
           data_vencimento: hoje,
           observacao: "",
+          total_parcelas: 1,
         });
         setValorDisplay("");
       }
@@ -452,6 +479,9 @@ export function MovimentacaoModal({
       setValue("status", StatusMovimentacao.PENDENTE);
     } else {
       setValue("cartao_credito_id", null);
+      setTotalParcelas(1);
+      setValue("total_parcelas", 1);
+      setModoEntradaValor("total");
       if (contas.length > 0) {
         setValue("conta_bancaria_id", contas[0].id);
       }
@@ -459,11 +489,78 @@ export function MovimentacaoModal({
     }
   };
 
+  // ── Handlers de Parcelamento e Valor ──────────────────────────────────────────
+  const handleParcelasChange = (novasParcelas: number) => {
+    setTotalParcelas(novasParcelas);
+    setValue("total_parcelas", novasParcelas);
+
+    const valorAtual = watch("valor") || 0;
+    if (modoEntradaValor === "total") {
+      if (valorAtual > 0 && novasParcelas > 0) {
+        setValorParcelaDisplay(formatarMoedaMascara(valorAtual / novasParcelas));
+      } else {
+        setValorParcelaDisplay("");
+      }
+    } else {
+      // Modo "parcela": recalcula o total multiplicando o valor da parcela pelo novo número de parcelas
+      const parcelaNum = parseMoeda(valorParcelaDisplay);
+      if (parcelaNum > 0) {
+        const novoTotal = Number((parcelaNum * novasParcelas).toFixed(2));
+        setValue("valor", novoTotal, { shouldValidate: true });
+        setValorDisplay(formatarMoedaMascara(novoTotal));
+      }
+    }
+  };
+
+  const handleModoEntradaChange = (novoModo: "total" | "parcela") => {
+    setModoEntradaValor(novoModo);
+    const valorAtual = watch("valor") || 0;
+
+    if (novoModo === "parcela") {
+      if (valorAtual > 0 && totalParcelas > 0) {
+        setValorParcelaDisplay(formatarMoedaMascara(valorAtual / totalParcelas));
+      }
+    } else {
+      if (valorAtual > 0) {
+        setValorDisplay(formatarMoedaMascara(valorAtual));
+      }
+    }
+  };
+
+  const handleValorTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const mascarado = aplicarMascaraMoeda(e.target.value);
+    setValorDisplay(mascarado);
+    const valorNum = mascarado ? parseMoeda(mascarado) : 0;
+    setValue("valor", valorNum, { shouldValidate: true });
+
+    if (totalParcelas > 1 && valorNum > 0) {
+      setValorParcelaDisplay(formatarMoedaMascara(valorNum / totalParcelas));
+    } else {
+      setValorParcelaDisplay("");
+    }
+  };
+
+  const handleValorParcelaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const mascarado = aplicarMascaraMoeda(e.target.value);
+    setValorParcelaDisplay(mascarado);
+    const valorParcelaNum = mascarado ? parseMoeda(mascarado) : 0;
+    const novoTotal = Number((valorParcelaNum * totalParcelas).toFixed(2));
+    setValue("valor", novoTotal, { shouldValidate: true });
+    setValorDisplay(novoTotal > 0 ? formatarMoedaMascara(novoTotal) : "");
+  };
+
   // ── Submit ────────────────────────────────────────────────────────────────────
   const onSubmit = async (data: MovimentacaoFormData) => {
     try {
       setIsSubmitting(true);
-      await onSalvar(data as CriarMovimentacaoPayload);
+      const payload: CriarMovimentacaoPayload = {
+        ...data,
+        total_parcelas:
+          origemPagamento === "cartao" && tipoSelecionado === TipoMovimentacao.DESPESA
+            ? totalParcelas
+            : null,
+      };
+      await onSalvar(payload);
       onOpenChange(false);
     } catch (err: unknown) {
       if (err instanceof AxiosError && err.response?.status === 422) {
@@ -613,144 +710,277 @@ export function MovimentacaoModal({
             </div>
           </div>
 
-          {/* Seleção de Conta ou Cartão de Crédito */}
+          {/* Seleção de Conta / Cartão / Parcelamento e Categoria */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Seleção se Origem for Cartão de Crédito */}
             {tipoSelecionado === TipoMovimentacao.DESPESA && origemPagamento === "cartao" ? (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Cartão de Crédito *</Label>
-                <Select
-                  value={cartaoCreditoIdSelecionado ? String(cartaoCreditoIdSelecionado) : undefined}
-                  onValueChange={(val) =>
-                    setValue("cartao_credito_id", val ? Number(val) : null)
-                  }
-                >
-                  <SelectTrigger className="h-10 data-[size=default]:h-10 rounded-xl bg-background/60 border-border/60 text-xs">
-                    <SelectValue placeholder="Selecione o cartão">
-                      {(value: unknown) => labelCartao(value) ?? <span className="text-muted-foreground">Selecione o cartão</span>}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    {cartoes.map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)} label={c.nome}>
-                        {renderCartaoOption(c)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.cartao_credito_id && (
-                  <p className="text-[11px] text-destructive font-medium">
-                    {errors.cartao_credito_id.message}
-                  </p>
-                )}
-              </div>
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">Cartão de Crédito *</Label>
+                  <Select
+                    value={cartaoCreditoIdSelecionado ? String(cartaoCreditoIdSelecionado) : undefined}
+                    onValueChange={(val) =>
+                      setValue("cartao_credito_id", val ? Number(val) : null)
+                    }
+                  >
+                    <SelectTrigger className="h-10 data-[size=default]:h-10 rounded-xl bg-background/60 border-border/60 text-xs">
+                      <SelectValue placeholder="Selecione o cartão">
+                        {(value: unknown) => labelCartao(value) ?? <span className="text-muted-foreground">Selecione o cartão</span>}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {cartoes.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)} label={c.nome}>
+                          {renderCartaoOption(c)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.cartao_credito_id && (
+                    <p className="text-[11px] text-destructive font-medium">
+                      {errors.cartao_credito_id.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Seletor de Parcelas */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold flex items-center gap-1.5">
+                      <Layers className="h-3.5 w-3.5 text-[#1F4E79] dark:text-sky-400" />
+                      <span>Parcelamento</span>
+                    </Label>
+                    {totalParcelas > 1 && (
+                      <span className="text-[10px] font-medium text-muted-foreground">
+                        {totalParcelas}x parcelado
+                      </span>
+                    )}
+                  </div>
+                  <Select
+                    value={String(totalParcelas)}
+                    onValueChange={(val) => handleParcelasChange(Number(val) || 1)}
+                    disabled={Boolean(movimentacaoParaEditar)}
+                  >
+                    <SelectTrigger className="h-10 data-[size=default]:h-10 rounded-xl bg-background/60 border-border/60 text-xs">
+                      <SelectValue placeholder="Parcelamento">
+                        {totalParcelas === 1
+                          ? "1x (À vista)"
+                          : `${totalParcelas}x ${
+                              valorParcelaDisplay ? `• ${valorParcelaDisplay}/mês` : ""
+                            }`}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl max-h-56">
+                      {OPCOES_PARCELAS.map((num) => (
+                        <SelectItem key={num} value={String(num)}>
+                          {num === 1 ? "1x (À vista)" : `${num}x`}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Categoria ocupando 2 colunas quando origem for cartão */}
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label className="text-xs font-semibold">Categoria</Label>
+                  <ComboboxCategoria
+                    categorias={categoriasFiltradas}
+                    valorSelecionado={valorCategoriaSelecionada}
+                    onChange={(val) => handleCategoriaChange(val)}
+                    placeholder="Buscar categoria..."
+                    hasError={Boolean(errors.categoria_id)}
+                  />
+                  {errors.categoria_id && (
+                    <p className="text-[11px] text-destructive font-medium">
+                      {errors.categoria_id.message}
+                    </p>
+                  )}
+                </div>
+              </>
             ) : (
               /* Seleção de Conta de Origem */
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">
-                  {tipoSelecionado === TipoMovimentacao.TRANSFERENCIA ? "Conta de Origem" : "Conta Bancária"}
-                </Label>
-                <Select
-                  value={watch("conta_bancaria_id") ? String(watch("conta_bancaria_id")) : undefined}
-                  onValueChange={(val) =>
-                    setValue("conta_bancaria_id", val ? Number(val) : null)
-                  }
-                >
-                  <SelectTrigger className="h-10 data-[size=default]:h-10 rounded-xl bg-background/60 border-border/60 text-xs">
-                    <SelectValue placeholder="Selecione a conta">
-                      {(value: unknown) => labelConta(value) ?? <span className="text-muted-foreground">Selecione a conta</span>}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    {contas.map((c) => (
-                      <SelectItem key={c.id} value={String(c.id)} label={c.nome}>
-                        {renderContaOption(c)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.conta_bancaria_id && (
-                  <p className="text-[11px] text-destructive font-medium">
-                    {errors.conta_bancaria_id.message}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Conta de Destino (Transferência) */}
-            {tipoSelecionado === TipoMovimentacao.TRANSFERENCIA && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Conta de Destino</Label>
-                <Select
-                  value={watch("conta_bancaria_destino_id") ? String(watch("conta_bancaria_destino_id")) : undefined}
-                  onValueChange={(val) =>
-                    setValue("conta_bancaria_destino_id", val ? Number(val) : null)
-                  }
-                >
-                  <SelectTrigger className="h-10 data-[size=default]:h-10 rounded-xl bg-background/60 border-border/60 text-xs">
-                    <SelectValue placeholder="Selecione o destino">
-                      {(value: unknown) =>
-                        labelContaDestino(value) ?? <span className="text-muted-foreground">Selecione o destino</span>
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    {contas
-                      .filter((c) => c.id !== contaBancariaIdSelecionada)
-                      .map((c) => (
+              <>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold">
+                    {tipoSelecionado === TipoMovimentacao.TRANSFERENCIA ? "Conta de Origem" : "Conta Bancária"}
+                  </Label>
+                  <Select
+                    value={watch("conta_bancaria_id") ? String(watch("conta_bancaria_id")) : undefined}
+                    onValueChange={(val) =>
+                      setValue("conta_bancaria_id", val ? Number(val) : null)
+                    }
+                  >
+                    <SelectTrigger className="h-10 data-[size=default]:h-10 rounded-xl bg-background/60 border-border/60 text-xs">
+                      <SelectValue placeholder="Selecione a conta">
+                        {(value: unknown) => labelConta(value) ?? <span className="text-muted-foreground">Selecione a conta</span>}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {contas.map((c) => (
                         <SelectItem key={c.id} value={String(c.id)} label={c.nome}>
                           {renderContaOption(c)}
                         </SelectItem>
                       ))}
-                  </SelectContent>
-                </Select>
-                {errors.conta_bancaria_destino_id && (
-                  <p className="text-[11px] text-destructive font-medium">
-                    {errors.conta_bancaria_destino_id.message}
-                  </p>
-                )}
-              </div>
-            )}
+                    </SelectContent>
+                  </Select>
+                  {errors.conta_bancaria_id && (
+                    <p className="text-[11px] text-destructive font-medium">
+                      {errors.conta_bancaria_id.message}
+                    </p>
+                  )}
+                </div>
 
-            {/* Combobox com busca de Categoria / Subcategoria */}
-            {tipoSelecionado !== TipoMovimentacao.TRANSFERENCIA && (
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Categoria</Label>
-                <ComboboxCategoria
-                  categorias={categoriasFiltradas}
-                  valorSelecionado={valorCategoriaSelecionada}
-                  onChange={(val) => handleCategoriaChange(val)}
-                  placeholder="Buscar categoria..."
-                  hasError={Boolean(errors.categoria_id)}
-                />
-                {errors.categoria_id && (
-                  <p className="text-[11px] text-destructive font-medium">
-                    {errors.categoria_id.message}
-                  </p>
+                {/* Conta de Destino (Transferência) */}
+                {tipoSelecionado === TipoMovimentacao.TRANSFERENCIA && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Conta de Destino</Label>
+                    <Select
+                      value={watch("conta_bancaria_destino_id") ? String(watch("conta_bancaria_destino_id")) : undefined}
+                      onValueChange={(val) =>
+                        setValue("conta_bancaria_destino_id", val ? Number(val) : null)
+                      }
+                    >
+                      <SelectTrigger className="h-10 data-[size=default]:h-10 rounded-xl bg-background/60 border-border/60 text-xs">
+                        <SelectValue placeholder="Selecione o destino">
+                          {(value: unknown) =>
+                            labelContaDestino(value) ?? <span className="text-muted-foreground">Selecione o destino</span>
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {contas
+                          .filter((c) => c.id !== contaBancariaIdSelecionada)
+                          .map((c) => (
+                            <SelectItem key={c.id} value={String(c.id)} label={c.nome}>
+                              {renderContaOption(c)}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.conta_bancaria_destino_id && (
+                      <p className="text-[11px] text-destructive font-medium">
+                        {errors.conta_bancaria_destino_id.message}
+                      </p>
+                    )}
+                  </div>
                 )}
-              </div>
+
+                {/* Combobox com busca de Categoria / Subcategoria */}
+                {tipoSelecionado !== TipoMovimentacao.TRANSFERENCIA && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Categoria</Label>
+                    <ComboboxCategoria
+                      categorias={categoriasFiltradas}
+                      valorSelecionado={valorCategoriaSelecionada}
+                      onChange={(val) => handleCategoriaChange(val)}
+                      placeholder="Buscar categoria..."
+                      hasError={Boolean(errors.categoria_id)}
+                    />
+                    {errors.categoria_id && (
+                      <p className="text-[11px] text-destructive font-medium">
+                        {errors.categoria_id.message}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {/* Valor com Máscara BRL */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold">Valor</Label>
-            <Input
-              type="text"
-              inputMode="numeric"
-              placeholder="R$ 0,00"
-              value={valorDisplay}
-              onChange={(e) => {
-                const mascarado = aplicarMascaraMoeda(e.target.value);
-                setValorDisplay(mascarado);
-                setValue("valor", mascarado ? parseMoeda(mascarado) : 0);
-              }}
-              className={cn(
-                "h-10 rounded-xl bg-background/60 border-border/60 font-medium text-xs",
-                tipoSelecionado === TipoMovimentacao.RECEITA && valorDisplay && "text-emerald-600 font-semibold",
-                tipoSelecionado === TipoMovimentacao.DESPESA && valorDisplay && "text-red-600 font-semibold"
-              )}
-            />
+          {/* Valor com Máscara BRL e Alternância de Modo (Total vs Parcela) */}
+          <div className="space-y-2">
+            {tipoSelecionado === TipoMovimentacao.DESPESA &&
+            origemPagamento === "cartao" &&
+            totalParcelas > 1 ? (
+              <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <Label className="text-xs font-semibold">
+                    {modoEntradaValor === "total" ? "Valor Total da Compra" : "Valor de Cada Parcela"}
+                  </Label>
+
+                  {/* Alternador de Modo de Entrada */}
+                  <div className="flex items-center p-0.5 rounded-lg bg-muted/50 border border-border/40 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={() => handleModoEntradaChange("total")}
+                      className={cn(
+                        "text-[10px] font-semibold px-2.5 py-1 rounded-md transition-all cursor-pointer",
+                        modoEntradaValor === "total"
+                          ? "bg-background text-foreground shadow-2xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      Informar Total
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleModoEntradaChange("parcela")}
+                      className={cn(
+                        "text-[10px] font-semibold px-2.5 py-1 rounded-md transition-all cursor-pointer",
+                        modoEntradaValor === "parcela"
+                          ? "bg-background text-foreground shadow-2xs"
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      Informar p/ Parcela
+                    </button>
+                  </div>
+                </div>
+
+                {modoEntradaValor === "total" ? (
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="R$ 0,00"
+                    value={valorDisplay}
+                    onChange={handleValorTotalChange}
+                    className="h-10 rounded-xl bg-background/60 border-border/60 font-semibold text-xs text-red-600 dark:text-red-400"
+                  />
+                ) : (
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="R$ 0,00"
+                    value={valorParcelaDisplay}
+                    onChange={handleValorParcelaChange}
+                    className="h-10 rounded-xl bg-background/60 border-border/60 font-semibold text-xs text-red-600 dark:text-red-400"
+                  />
+                )}
+
+                {/* Card de Resumo do Parcelamento */}
+                {((modoEntradaValor === "total" && valorDisplay) ||
+                  (modoEntradaValor === "parcela" && valorParcelaDisplay)) && (
+                  <div className="flex items-center gap-2 p-2.5 rounded-xl bg-muted/40 border border-border/50 text-xs">
+                    <Calculator className="h-4 w-4 text-[#1F4E79] dark:text-sky-400 shrink-0" />
+                    <div className="text-[11px] leading-tight">
+                      <span className="font-semibold text-foreground">
+                        {totalParcelas}x de {valorParcelaDisplay || "R$ 0,00"}
+                      </span>
+                      <span className="text-muted-foreground ml-1.5">
+                        • Valor total: <strong className="text-foreground">{valorDisplay || "R$ 0,00"}</strong>
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Valor</Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="R$ 0,00"
+                  value={valorDisplay}
+                  onChange={handleValorTotalChange}
+                  className={cn(
+                    "h-10 rounded-xl bg-background/60 border-border/60 font-medium text-xs",
+                    tipoSelecionado === TipoMovimentacao.RECEITA && valorDisplay && "text-emerald-600 font-semibold",
+                    tipoSelecionado === TipoMovimentacao.DESPESA && valorDisplay && "text-red-600 font-semibold"
+                  )}
+                />
+              </div>
+            )}
+
             {errors.valor && (
               <p className="text-[11px] text-destructive font-medium">{errors.valor.message}</p>
             )}

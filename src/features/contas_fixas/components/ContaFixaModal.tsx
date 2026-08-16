@@ -132,7 +132,7 @@ export function ContaFixaModal({
       tipo: TipoMovimentacao.DESPESA,
       forma_pagamento: FormaPagamentoContaFixa.CONTA_BANCARIA,
       frequencia: FrequenciaContaFixa.MENSAL,
-      dia_vencimento: "10",
+      dia_vencimento: "",
       categoria_id: "",
       subcategoria_id: "",
       conta_bancaria_id: "",
@@ -296,7 +296,7 @@ export function ContaFixaModal({
           tipo: TipoMovimentacao.DESPESA,
           forma_pagamento: FormaPagamentoContaFixa.CONTA_BANCARIA,
           frequencia: FrequenciaContaFixa.MENSAL,
-          dia_vencimento: "10",
+          dia_vencimento: "",
           categoria_id: "",
           subcategoria_id: "",
           conta_bancaria_id: contas.length > 0 ? contas[0].id.toString() : "",
@@ -459,7 +459,7 @@ export function ContaFixaModal({
                 type="number"
                 min="1"
                 max="31"
-                placeholder="10"
+                placeholder="Ex: 10"
                 {...register("dia_vencimento")}
                 className="rounded-[10px] text-sm h-10"
               />

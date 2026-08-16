@@ -10,6 +10,8 @@ import {
   Trash2,
   Calendar,
   Landmark,
+  CreditCard as CreditCardIcon,
+  Layers,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +47,7 @@ export function MovimentacaoListItem({
   const isDespesa = movimentacao.tipo === TipoMovimentacao.DESPESA;
   const isTransferencia = movimentacao.tipo === TipoMovimentacao.TRANSFERENCIA;
   const isPago = movimentacao.status === StatusMovimentacao.PAGO;
+  const totalParcelas = movimentacao.parcelas?.length || 0;
 
   return (
     <div className="p-4 rounded-2xl border border-border/40 bg-card/40 hover:bg-card/70 hover:border-border/80 transition-all group flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -83,9 +86,20 @@ export function MovimentacaoListItem({
             >
               {isPago ? "Pago" : "Pendente"}
             </Badge>
+
+            {/* Parcelas Badge */}
+            {totalParcelas > 1 && (
+              <Badge
+                variant="outline"
+                className="text-[10px] px-2 py-0.5 rounded-full font-medium border-0 bg-[#1F4E79]/10 text-[#1F4E79] dark:text-sky-400 gap-1"
+              >
+                <Layers className="h-2.5 w-2.5" />
+                <span>{totalParcelas}x parcelas</span>
+              </Badge>
+            )}
           </div>
 
-          {/* Categoria, Subcategoria e Conta */}
+          {/* Categoria, Subcategoria e Conta / Cartão */}
           <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
             {/* Categoria / Subcategoria */}
             {isTransferencia ? (
@@ -103,15 +117,24 @@ export function MovimentacaoListItem({
 
             <span>•</span>
 
-            {/* Conta Bancária */}
+            {/* Conta Bancária ou Cartão de Crédito */}
             <div className="flex items-center gap-1">
-              <Landmark className="h-3.5 w-3.5 text-muted-foreground/70" />
-              <span>{movimentacao.conta_bancaria?.nome || "Conta"}</span>
-              {isTransferencia && movimentacao.conta_bancaria_destino && (
-                <span className="font-medium text-foreground">
-                  {" → "}
-                  {movimentacao.conta_bancaria_destino.nome}
-                </span>
+              {movimentacao.cartao_credito ? (
+                <>
+                  <CreditCardIcon className="h-3.5 w-3.5 text-amber-500/80" />
+                  <span>{movimentacao.cartao_credito.nome}</span>
+                </>
+              ) : (
+                <>
+                  <Landmark className="h-3.5 w-3.5 text-muted-foreground/70" />
+                  <span>{movimentacao.conta_bancaria?.nome || "Conta"}</span>
+                  {isTransferencia && movimentacao.conta_bancaria_destino && (
+                    <span className="font-medium text-foreground">
+                      {" → "}
+                      {movimentacao.conta_bancaria_destino.nome}
+                    </span>
+                  )}
+                </>
               )}
             </div>
 
