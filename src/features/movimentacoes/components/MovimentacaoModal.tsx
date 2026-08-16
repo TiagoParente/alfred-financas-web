@@ -830,28 +830,7 @@ export function MovimentacaoModal({
 
                 {/* Categoria ocupando 2 colunas quando origem for cartão */}
                 <div className="space-y-1.5 sm:col-span-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold">Categoria *</Label>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setModalNovaCategoriaAberta(true)}
-                        className="text-[11px] font-medium text-[#1F4E79] dark:text-sky-400 hover:underline flex items-center gap-0.5 cursor-pointer"
-                      >
-                        <Plus className="h-3 w-3" />
-                        <span>Nova Categoria</span>
-                      </button>
-                      <span className="text-muted-foreground/60 text-[10px]">•</span>
-                      <button
-                        type="button"
-                        onClick={() => setModalNovaSubcategoriaAberta(true)}
-                        className="text-[11px] font-medium text-[#1F4E79] dark:text-sky-400 hover:underline flex items-center gap-0.5 cursor-pointer"
-                      >
-                        <Plus className="h-3 w-3" />
-                        <span>Subcategoria</span>
-                      </button>
-                    </div>
-                  </div>
+                  <Label className="text-xs font-semibold">Categoria</Label>
                   <ComboboxCategoria
                     categorias={categoriasFiltradas}
                     valorSelecionado={valorCategoriaSelecionada}
@@ -949,28 +928,7 @@ export function MovimentacaoModal({
                 {/* Combobox com busca de Categoria / Subcategoria */}
                 {tipoSelecionado !== TipoMovimentacao.TRANSFERENCIA && (
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs font-semibold">Categoria *</Label>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setModalNovaCategoriaAberta(true)}
-                          className="text-[11px] font-medium text-[#1F4E79] dark:text-sky-400 hover:underline flex items-center gap-0.5 cursor-pointer"
-                        >
-                          <Plus className="h-3 w-3" />
-                          <span>Nova Categoria</span>
-                        </button>
-                        <span className="text-muted-foreground/60 text-[10px]">•</span>
-                        <button
-                          type="button"
-                          onClick={() => setModalNovaSubcategoriaAberta(true)}
-                          className="text-[11px] font-medium text-[#1F4E79] dark:text-sky-400 hover:underline flex items-center gap-0.5 cursor-pointer"
-                        >
-                          <Plus className="h-3 w-3" />
-                          <span>Subcategoria</span>
-                        </button>
-                      </div>
-                    </div>
+                    <Label className="text-xs font-semibold">Categoria</Label>
                     <ComboboxCategoria
                       categorias={categoriasFiltradas}
                       valorSelecionado={valorCategoriaSelecionada}
