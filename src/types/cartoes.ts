@@ -86,6 +86,7 @@ export interface DetalhesFaturaResponse {
   status_descricao: string;
   data_inicio_ciclo: string;
   data_fechamento_ciclo: string;
+  data_fim_compras?: string;
   data_vencimento_ciclo: string;
   valor_total: number;
   total_itens: number;

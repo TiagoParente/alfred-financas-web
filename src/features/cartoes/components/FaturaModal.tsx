@@ -60,12 +60,12 @@ function calcularDataInicialFatura(cartao: CartaoCredito | null): Date {
   const mesHoje = hoje.getMonth();
 
   if (cartao.dia_fechamento < cartao.dia_vencimento) {
-    if (diaHoje <= cartao.dia_fechamento) {
+    if (diaHoje < cartao.dia_fechamento) {
       return new Date(anoHoje, mesHoje, 1);
     }
     return new Date(anoHoje, mesHoje + 1, 1);
   } else {
-    if (diaHoje <= cartao.dia_fechamento) {
+    if (diaHoje < cartao.dia_fechamento) {
       return new Date(anoHoje, mesHoje + 1, 1);
     }
     return new Date(anoHoje, mesHoje + 2, 1);
