@@ -37,6 +37,7 @@ export function useFaturaCartao(cartaoId: number | null, mesAno?: string) {
       queryClient.invalidateQueries({ queryKey: ["contas-bancarias"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       queryClient.invalidateQueries({ queryKey: ["movimentacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["detalhamento-conta-bancaria"] });
     },
   });
 

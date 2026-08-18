@@ -38,6 +38,7 @@ export function useDashboard(
     projecaoFluxo: data?.projecao_fluxo ?? data?.mensal?.projecao_fluxo ?? [],
     resumoOrcamentos: data?.resumo_orcamentos,
     orcamentos: data?.orcamentos ?? [],
+    despesasPorCategoria: data?.despesas_por_categoria ?? [],
     resumoMetas: data?.resumo_metas,
     metas: data?.metas ?? [],
     evolucaoInvestimentos: data?.evolucao_investimentos,

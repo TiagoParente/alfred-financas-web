@@ -14,6 +14,7 @@ import {
   PieChart,
   Settings,
   Sparkles,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +32,12 @@ const navItems: NavItem[] = [
     titulo: "Dashboard",
     href: "/dashboard",
     icone: LayoutDashboard,
+    ativo: true,
+  },
+  {
+    titulo: "Projeções",
+    href: "/projecoes",
+    icone: TrendingUp,
     ativo: true,
   },
   {

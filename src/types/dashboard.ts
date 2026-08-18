@@ -98,6 +98,16 @@ export interface EvolucaoInvestimentosResumo {
   historico: HistoricoInvestimentoItem[];
 }
 
+export interface DespesaCategoriaItem {
+  categoria_id: number | null;
+  nome: string;
+  icone: string | null;
+  cor_hex: string | null;
+  total: number;
+  percentual: number;
+  valor_limite?: number | null;
+}
+
 export interface DashboardData {
   familia_nome: string;
   saldos: DashboardSaldos;
@@ -106,6 +116,7 @@ export interface DashboardData {
   proximos_vencimentos: ProximoVencimento[];
   resumo_orcamentos: ResumoOrcamentos;
   orcamentos: Orcamento[];
+  despesas_por_categoria?: DespesaCategoriaItem[];
   resumo_metas: ResumoReservas;
   metas: Meta[];
   evolucao_investimentos?: EvolucaoInvestimentosResumo;

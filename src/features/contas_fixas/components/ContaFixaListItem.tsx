@@ -96,17 +96,45 @@ export function ContaFixaListItem({
             <span>•</span>
 
             {/* Forma de Pagamento */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               {contaFixa.forma_pagamento === FormaPagamentoContaFixa.CARTAO_CREDITO ? (
-                <>
-                  <CreditCard className="h-3.5 w-3.5 text-muted-foreground/70" />
-                  <span>{contaFixa.cartao_credito?.nome || "Cartão de Crédito"}</span>
-                </>
+                <div className="flex items-center gap-1 min-w-0">
+                  <div
+                    className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded text-white font-bold text-[8px] overflow-hidden"
+                    style={{ backgroundColor: contaFixa.cartao_credito?.cor_hex || "#1F4E79" }}
+                  >
+                    {contaFixa.cartao_credito?.banco?.logo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={contaFixa.cartao_credito.banco.logo_url}
+                        alt={contaFixa.cartao_credito.banco.nome}
+                        className="h-2.5 w-2.5 object-contain"
+                      />
+                    ) : (
+                      <CreditCard className="h-2 w-2 text-white" />
+                    )}
+                  </div>
+                  <span className="truncate">{contaFixa.cartao_credito?.nome || "Cartão de Crédito"}</span>
+                </div>
               ) : (
-                <>
-                  <Landmark className="h-3.5 w-3.5 text-muted-foreground/70" />
-                  <span>{contaFixa.conta_bancaria?.nome || "Conta Bancária"}</span>
-                </>
+                <div className="flex items-center gap-1 min-w-0">
+                  <div
+                    className="flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded text-white font-bold text-[8px] overflow-hidden"
+                    style={{ backgroundColor: contaFixa.conta_bancaria?.cor_hex || "#1F4E79" }}
+                  >
+                    {contaFixa.conta_bancaria?.banco?.logo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={contaFixa.conta_bancaria.banco.logo_url}
+                        alt={contaFixa.conta_bancaria.banco.nome}
+                        className="h-2.5 w-2.5 object-contain"
+                      />
+                    ) : (
+                      <Landmark className="h-2 w-2 text-white" />
+                    )}
+                  </div>
+                  <span className="truncate">{contaFixa.conta_bancaria?.nome || "Conta Bancária"}</span>
+                </div>
               )}
             </div>
 

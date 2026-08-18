@@ -89,7 +89,10 @@ export interface DetalhesFaturaResponse {
   data_fim_compras?: string;
   data_vencimento_ciclo: string;
   valor_total: number;
+  valor_pago?: number;
+  valor_pendente?: number;
   total_itens: number;
+  itens_pendentes_count?: number;
   itens: Movimentacao[];
   parcelas?: ParcelaFatura[];
 }
@@ -117,6 +120,7 @@ export interface AtualizarCartaoCreditoPayload {
 
 export interface PagarFaturaPayload {
   conta_bancaria_id: number;
+  valor?: number;
   mes_ano?: string;
   data_pagamento?: string;
   observacao?: string;

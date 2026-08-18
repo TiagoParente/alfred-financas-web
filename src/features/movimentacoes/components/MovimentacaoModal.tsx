@@ -18,7 +18,6 @@ import {
   Sparkles,
   Calculator,
   Layers,
-  Plus,
 } from "lucide-react";
 import {
   Dialog,
@@ -1028,7 +1027,7 @@ export function MovimentacaoModal({
                     placeholder="R$ 0,00"
                     value={valorDisplay}
                     onChange={handleValorTotalChange}
-                    className="h-10 rounded-xl bg-background/60 border-border/60 font-semibold text-xs text-red-600 dark:text-red-400"
+                    className="h-10 rounded-xl bg-background/60 border-border/60 font-semibold text-xs text-foreground"
                   />
                 ) : (
                   <Input
@@ -1037,7 +1036,7 @@ export function MovimentacaoModal({
                     placeholder="R$ 0,00"
                     value={valorParcelaDisplay}
                     onChange={handleValorParcelaChange}
-                    className="h-10 rounded-xl bg-background/60 border-border/60 font-semibold text-xs text-red-600 dark:text-red-400"
+                    className="h-10 rounded-xl bg-background/60 border-border/60 font-semibold text-xs text-foreground"
                   />
                 )}
 
@@ -1066,11 +1065,7 @@ export function MovimentacaoModal({
                   placeholder="R$ 0,00"
                   value={valorDisplay}
                   onChange={handleValorTotalChange}
-                  className={cn(
-                    "h-10 rounded-xl bg-background/60 border-border/60 font-medium text-xs",
-                    tipoSelecionado === TipoMovimentacao.RECEITA && valorDisplay && "text-emerald-600 font-semibold",
-                    tipoSelecionado === TipoMovimentacao.DESPESA && valorDisplay && "text-red-600 font-semibold"
-                  )}
+                  className="h-10 rounded-xl bg-background/60 border-border/60 font-semibold text-xs text-foreground"
                 />
               </div>
             )}

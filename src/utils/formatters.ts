@@ -36,6 +36,8 @@ export const formatarPorcentagem = (valor: number | null | undefined): string =>
   }).format(valor / 100);
 };
 
+export const formatarPercentual = formatarPorcentagem;
+
 export const formatarCodigoCompe = (codigo: string | null | undefined): string => {
   if (!codigo) return "";
   return codigo.padStart(3, "0");

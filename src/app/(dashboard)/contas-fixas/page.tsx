@@ -359,6 +359,7 @@ export default function ContasFixasPage() {
         contaFixaEmEdicao={contaFixaEmEdicao}
         onSubmit={handleSalvarContaFixa}
         isSubmitting={isCriando || isAtualizando}
+        familiaId={familiaAtiva?.id}
       />
 
       <DeletarContaFixaModal

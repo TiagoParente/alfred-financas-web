@@ -14,13 +14,16 @@ import { GraficoEvolucaoInvestimentos } from "@/features/dashboard/components/Gr
 import { ContaBancariaCard } from "@/features/contas_bancarias/components/ContaBancariaCard";
 import { ContaBancariaModal } from "@/features/contas_bancarias/components/ContaBancariaModal";
 import { ContaBancaria } from "@/types/contas";
+import { useQueryClient } from "@tanstack/react-query";
 import { OrcamentoListItem } from "@/features/orcamentos/components/OrcamentoListItem";
+import { EditarOrcamentoModal } from "@/features/orcamentos/components/EditarOrcamentoModal";
+import { DeletarOrcamentoModal } from "@/features/orcamentos/components/DeletarOrcamentoModal";
+import { Orcamento } from "@/types/orcamento";
 import { formatarMoeda } from "@/utils/formatters";
 import {
   Plus,
   ArrowRight,
   Landmark,
-  Target,
   PieChart,
   Calendar,
   Sparkles,
@@ -43,12 +46,15 @@ export default function DashboardPage() {
     mensal,
     projecaoFluxo,
     proximosVencimentos,
+    despesasPorCategoria,
     orcamentos,
-    metas,
     evolucaoInvestimentos,
     alfredInsights,
     isLoading,
+    refetch,
   } = useDashboard(familiaAtiva?.id, mes, ano, regime);
+
+  const queryClient = useQueryClient();
 
   const { contasFixas } = useContasFixas(familiaAtiva?.id, true);
   const { resumo: resumoCartoes } = useCartoes(familiaAtiva?.id);
@@ -63,6 +69,12 @@ export default function DashboardPage() {
 
   const [modalFormAberta, setModalFormAberta] = useState(false);
   const [contaEmEdicao, setContaEmEdicao] = useState<ContaBancaria | null>(null);
+
+  // Estados dos Modais de Orçamento
+  const [orcamentoEmEdicao, setOrcamentoEmEdicao] = useState<Orcamento | null>(null);
+  const [modalEditarOrcamentoOpen, setModalEditarOrcamentoOpen] = useState(false);
+  const [orcamentoEmDelecao, setOrcamentoEmDelecao] = useState<Orcamento | null>(null);
+  const [modalDeletarOrcamentoOpen, setModalDeletarOrcamentoOpen] = useState(false);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleSubmitForm = async (formData: any) => {
@@ -236,7 +248,10 @@ export default function DashboardPage() {
         {isLoading ? (
           <div className="h-72 rounded-[16px] bg-accent/40 animate-pulse" />
         ) : (
-          <GraficoTopCategoriasDespesas orcamentos={orcamentos} />
+          <GraficoTopCategoriasDespesas
+            despesasPorCategoria={despesasPorCategoria}
+            orcamentos={orcamentos}
+          />
         )}
 
         {isLoading ? (
@@ -280,83 +295,21 @@ export default function DashboardPage() {
               <OrcamentoListItem
                 key={orcamento.id}
                 orcamento={orcamento}
-                onEditar={() => {}}
-                onDeletar={() => {}}
+                onEditar={(o) => {
+                  setOrcamentoEmEdicao(o);
+                  setModalEditarOrcamentoOpen(true);
+                }}
+                onDeletar={(o) => {
+                  setOrcamentoEmDelecao(o);
+                  setModalDeletarOrcamentoOpen(true);
+                }}
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* 5. Metas & Reservas Financeiras */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-[#1F4E79]" />
-            <h2 className="text-base font-bold text-foreground">
-              Metas & Reservas Financeiras
-            </h2>
-          </div>
-          <Link
-            href="/metas"
-            className="flex items-center gap-1 text-xs font-semibold text-[#1F4E79] hover:underline"
-          >
-            <span>Ver todas as metas</span>
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-
-        {metas.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-[16px] border border-dashed border-border/70 p-6 text-center bg-accent/10">
-            <Target className="h-8 w-8 text-[#1F4E79] mb-2" />
-            <p className="text-sm font-medium text-foreground">Nenhuma meta cadastrada</p>
-            <Link href="/metas">
-              <Button variant="outline" className="mt-3 text-xs rounded-[10px]">
-                Criar Nova Meta
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {metas.slice(0, 4).map((meta) => {
-              const percentual = meta.valor_alvo > 0
-                ? Math.min(100, (meta.valor_atual / meta.valor_alvo) * 100)
-                : 0;
-
-              return (
-                <div
-                  key={meta.id}
-                  className="rounded-[16px] border border-border/50 bg-card p-4 shadow-sm space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sm text-foreground truncate">
-                      {meta.nome}
-                    </span>
-                    <span className="text-xs font-bold text-[#1F4E79]">
-                      {percentual.toFixed(0)}%
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="h-2 w-full rounded-full bg-accent overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-[#1F4E79] transition-all duration-500"
-                        style={{ width: `${percentual}%` }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground pt-0.5">
-                      <span>{formatarMoeda(meta.valor_atual)}</span>
-                      <span>alvo: {formatarMoeda(meta.valor_alvo)}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* 6. Contas Bancárias Ativas */}
+      {/* 5. Contas Bancárias Ativas */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -413,6 +366,29 @@ export default function DashboardPage() {
         contaEmEdicao={contaEmEdicao}
         onSubmit={handleSubmitForm}
         isSubmitting={isCriando || isAtualizando}
+      />
+
+      {/* Modais de Orçamento */}
+      <EditarOrcamentoModal
+        orcamento={orcamentoEmEdicao}
+        open={modalEditarOrcamentoOpen}
+        onOpenChange={setModalEditarOrcamentoOpen}
+        onSucesso={() => {
+          refetch();
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          queryClient.invalidateQueries({ queryKey: ["orcamentos"] });
+        }}
+      />
+
+      <DeletarOrcamentoModal
+        orcamento={orcamentoEmDelecao}
+        open={modalDeletarOrcamentoOpen}
+        onOpenChange={setModalDeletarOrcamentoOpen}
+        onSucesso={() => {
+          refetch();
+          queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+          queryClient.invalidateQueries({ queryKey: ["orcamentos"] });
+        }}
       />
     </div>
   );

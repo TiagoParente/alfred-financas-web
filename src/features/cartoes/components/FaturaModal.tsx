@@ -150,7 +150,12 @@ export function FaturaModal({
     );
   }, [fatura]);
 
-  const podePagarFatura = fatura && fatura.status !== StatusFatura.PAGA && Number(fatura.valor_total) > 0;
+  const podePagarFatura =
+    fatura &&
+    fatura.status !== StatusFatura.PAGA &&
+    (fatura.valor_pendente !== undefined
+      ? Number(fatura.valor_pendente) > 0
+      : Number(fatura.valor_total) > 0);
 
   return (
     <>
@@ -255,6 +260,18 @@ export function FaturaModal({
                       <h3 className="text-2xl font-bold text-foreground">
                         {formatarMoeda(fatura.valor_total)}
                       </h3>
+                      {fatura.valor_pago !== undefined && fatura.valor_pago > 0 && (
+                        <div className="flex items-center gap-3 mt-1 text-xs">
+                          <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                            Pago: {formatarMoeda(fatura.valor_pago)}
+                          </span>
+                          {fatura.valor_pendente !== undefined && fatura.valor_pendente > 0 && (
+                            <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                              Pendente: {formatarMoeda(fatura.valor_pendente)}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex items-center gap-2">

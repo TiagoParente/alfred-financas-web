@@ -12,7 +12,10 @@ import {
 } from "recharts";
 import { PieChart as PieChartIcon, Tag } from "lucide-react";
 
+import { DespesaCategoriaItem } from "@/types/dashboard";
+
 interface GraficoTopCategoriasDespesasProps {
+  despesasPorCategoria?: DespesaCategoriaItem[];
   orcamentos?: Orcamento[];
 }
 
@@ -57,10 +60,34 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export function GraficoTopCategoriasDespesas({
+  despesasPorCategoria = [],
   orcamentos = [],
 }: GraficoTopCategoriasDespesasProps) {
   // Filtra e ordena as categorias que possuem gasto > 0
   const { topCategorias, totalGasto } = useMemo(() => {
+    // 1. Se despesasPorCategoria estiver disponível, utiliza os dados consolidados do backend
+    if (despesasPorCategoria && despesasPorCategoria.length > 0) {
+      const comGastos = despesasPorCategoria
+        .filter((item) => Number(item.total) > 0)
+        .map((item, idx) => ({
+          id: item.categoria_id ?? `cat-${idx}`,
+          name: item.nome,
+          value: Number(item.total),
+          color: item.cor_hex || CORES_PADRAO[idx % CORES_PADRAO.length],
+          limite: item.valor_limite ? Number(item.valor_limite) : undefined,
+          percentual: Number(item.percentual),
+        }))
+        .sort((a, b) => b.value - a.value);
+
+      const total = comGastos.reduce((acc, curr) => acc + curr.value, 0);
+
+      return {
+        topCategorias: comGastos,
+        totalGasto: total,
+      };
+    }
+
+    // 2. Fallback para orcamentos caso despesasPorCategoria não venha preenchido
     const comGastos = orcamentos
       .filter((o) => Number(o.valor_gasto) > 0)
       .map((o, idx) => ({
@@ -83,7 +110,7 @@ export function GraficoTopCategoriasDespesas({
       topCategorias: comPercentual,
       totalGasto: total,
     };
-  }, [orcamentos]);
+  }, [despesasPorCategoria, orcamentos]);
 
   return (
     <div className="rounded-[16px] border border-border/50 bg-card p-6 shadow-sm space-y-4">
