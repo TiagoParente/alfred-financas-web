@@ -47,21 +47,21 @@ export function ContaCartaoContextoInfo({
   return (
     <div
       className={cn(
-        "rounded-xl border border-border/50 bg-muted/30 p-2.5 text-xs transition-all space-y-1.5",
+        "rounded-xl border border-border/50 bg-muted/30 p-2.5 text-xs transition-all space-y-1.5 overflow-hidden min-w-0 max-w-full",
         className
       )}
     >
       {/* Linha 1: Saldo ou Fatura / Limite */}
-      <div className="flex flex-wrap items-center justify-between gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-1.5 min-w-0">
         {conta && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
             <Wallet className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <span className="text-muted-foreground font-medium">
+            <span className="text-muted-foreground font-medium shrink-0">
               {labelPersonalizado || "Saldo Atual"}:
             </span>
             <span
               className={cn(
-                "font-semibold",
+                "font-semibold truncate",
                 conta.saldo_atual < 0
                   ? "text-red-600 dark:text-red-400"
                   : "text-emerald-600 dark:text-emerald-400"
@@ -73,17 +73,17 @@ export function ContaCartaoContextoInfo({
         )}
 
         {cartao && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
               <CreditCard className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <span className="text-muted-foreground font-medium">Fatura Atual:</span>
-              <span className="font-semibold text-red-600 dark:text-red-400">
+              <span className="text-muted-foreground font-medium shrink-0">Fatura Atual:</span>
+              <span className="font-semibold text-red-600 dark:text-red-400 truncate">
                 {formatarMoeda(cartao.fatura_atual)}
               </span>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="text-muted-foreground text-[11px]">Limite Disp.:</span>
-              <span className="font-medium text-foreground text-[11px]">
+            <div className="flex items-center gap-1 min-w-0">
+              <span className="text-muted-foreground text-[11px] shrink-0">Limite Disp.:</span>
+              <span className="font-medium text-foreground text-[11px] truncate">
                 {formatarMoeda(cartao.limite_disponivel)}
               </span>
             </div>
@@ -92,24 +92,24 @@ export function ContaCartaoContextoInfo({
       </div>
 
       {/* Linha 2: Data e detalhes da última movimentação */}
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1 border-t border-border/40">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground pt-1 border-t border-border/40 min-w-0 max-w-full overflow-hidden">
         <History className="h-3 w-3 text-muted-foreground/80 shrink-0" />
         {isLoading ? (
-          <span className="inline-flex items-center gap-1 text-muted-foreground/70 animate-pulse">
-            <Clock className="h-2.5 w-2.5 animate-spin" />
+          <span className="inline-flex items-center gap-1 text-muted-foreground/70 animate-pulse truncate">
+            <Clock className="h-2.5 w-2.5 animate-spin shrink-0" />
             Buscando última movimentação...
           </span>
         ) : ultimaMovimentacao ? (
-          <div className="flex items-center gap-1.5 truncate">
-            <span>Última movimentação:</span>
-            <span className="font-semibold text-foreground">
+          <div className="flex items-center gap-1.5 min-w-0 max-w-full truncate">
+            <span className="shrink-0">Última:</span>
+            <span className="font-semibold text-foreground shrink-0">
               {formatarData(ultimaMovimentacao.data_movimentacao)}
             </span>
-            <span className="text-muted-foreground/70">•</span>
-            <span className="truncate font-medium text-foreground max-w-[140px] sm:max-w-[200px]" title={ultimaMovimentacao.descricao}>
+            <span className="text-muted-foreground/70 shrink-0">•</span>
+            <span className="truncate font-medium text-foreground min-w-0" title={ultimaMovimentacao.descricao}>
               {ultimaMovimentacao.descricao}
             </span>
-            <span className="inline-flex items-center text-muted-foreground font-semibold">
+            <span className="inline-flex items-center text-muted-foreground font-semibold shrink-0">
               (
               {ultimaMovimentacao.tipo === TipoMovimentacao.RECEITA ? (
                 <ArrowDownLeft className="h-3 w-3 text-emerald-500 inline mr-0.5" />
@@ -121,7 +121,7 @@ export function ContaCartaoContextoInfo({
             </span>
           </div>
         ) : (
-          <span className="text-muted-foreground/80 italic">
+          <span className="text-muted-foreground/80 italic truncate">
             Nenhuma movimentação anterior registrada
           </span>
         )}

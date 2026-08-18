@@ -74,16 +74,18 @@ export function SubcategoriaModal({
   const categoriaIdAtual = watch("categoria_id");
 
   useEffect(() => {
-    if (subcategoria) {
-      reset({
-        nome: subcategoria.nome,
-        categoria_id: subcategoria.categoria_id,
-      });
-    } else {
-      reset({
-        nome: "",
-        categoria_id: undefined,
-      });
+    if (open) {
+      if (subcategoria) {
+        reset({
+          nome: subcategoria.nome,
+          categoria_id: subcategoria.categoria_id,
+        });
+      } else {
+        reset({
+          nome: "",
+          categoria_id: undefined,
+        });
+      }
     }
   }, [subcategoria, open, reset]);
 

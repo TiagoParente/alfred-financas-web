@@ -136,20 +136,22 @@ export function CategoriaModal({
   const corHexAtual = watch("cor_hex") || "#1F4E79";
 
   useEffect(() => {
-    if (categoriaEmEdicao) {
-      reset({
-        nome: categoriaEmEdicao.nome,
-        tipo: categoriaEmEdicao.tipo,
-        icone: categoriaEmEdicao.icone || "Tag",
-        cor_hex: categoriaEmEdicao.cor_hex || "#1F4E79",
-      });
-    } else {
-      reset({
-        nome: "",
-        tipo: tipoPadrao || TipoCategoria.DESPESA,
-        icone: "Tag",
-        cor_hex: "#1F4E79",
-      });
+    if (open) {
+      if (categoriaEmEdicao) {
+        reset({
+          nome: categoriaEmEdicao.nome,
+          tipo: categoriaEmEdicao.tipo,
+          icone: categoriaEmEdicao.icone || "Tag",
+          cor_hex: categoriaEmEdicao.cor_hex || "#1F4E79",
+        });
+      } else {
+        reset({
+          nome: "",
+          tipo: tipoPadrao || TipoCategoria.DESPESA,
+          icone: "Tag",
+          cor_hex: "#1F4E79",
+        });
+      }
     }
   }, [categoriaEmEdicao, tipoPadrao, open, reset]);
 

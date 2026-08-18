@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -263,23 +263,25 @@ export function MovimentacaoModal({
   );
 
   // ── Categorias filtradas por tipo ────────────────────────────────────────────
-  const categoriasFiltradas = categorias.filter((cat) => {
-    if (tipoSelecionado === TipoMovimentacao.RECEITA) return cat.tipo === "receita";
-    if (tipoSelecionado === TipoMovimentacao.DESPESA) return cat.tipo === "despesa";
-    return true;
-  });
+  const categoriasFiltradas = useMemo(() => {
+    return categorias.filter((cat) => {
+      if (tipoSelecionado === TipoMovimentacao.RECEITA) return cat.tipo === "receita";
+      if (tipoSelecionado === TipoMovimentacao.DESPESA) return cat.tipo === "despesa";
+      return true;
+    });
+  }, [categorias, tipoSelecionado]);
 
   /**
    * Valor codificado do select unificado de categoria/subcategoria.
    * Formato: "cat:ID" para categorias raiz ou "sub:ID" para subcategorias.
    */
-  const valorCategoriaSelecionada = (() => {
+  const valorCategoriaSelecionada = useMemo(() => {
     const subId = watch("subcategoria_id");
     const catId = watch("categoria_id");
     if (subId) return `sub:${subId}`;
     if (catId) return `cat:${catId}`;
     return undefined;
-  })();
+  }, [watch]);
 
   /** Decodifica a seleção e atualiza categoria_id / subcategoria_id no form. */
   const handleCategoriaChange = useCallback(

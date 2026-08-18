@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -57,9 +57,11 @@ export function NovaSubcategoriaModal({
   isSubmitting,
 }: NovaSubcategoriaModalProps) {
   // Filtra as categorias disponíveis se houver filtro de tipo
-  const categoriasDisponiveis = tipoFiltro
-    ? categorias.filter((c) => c.tipo === tipoFiltro)
-    : categorias;
+  const categoriasDisponiveis = useMemo(() => {
+    return tipoFiltro
+      ? categorias.filter((c) => c.tipo === tipoFiltro)
+      : categorias;
+  }, [categorias, tipoFiltro]);
 
   const {
     register,

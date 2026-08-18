@@ -121,11 +121,11 @@ export function ComboboxCategoria({
       {/* Trigger estilizado idêntico ao SelectTrigger */}
       <Combobox.Trigger
         className={cn(
-          "flex h-10 items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/60 py-2 px-3.5 text-xs font-medium overflow-hidden transition-colors outline-none select-none dark:bg-input/30 dark:hover:bg-input/50",
+          "flex h-10 w-full items-center justify-between gap-2 rounded-xl border border-border/60 bg-background/60 py-2 px-3.5 text-xs font-medium overflow-hidden transition-colors outline-none select-none dark:bg-input/30 dark:hover:bg-input/50",
           "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
           "disabled:cursor-not-allowed disabled:opacity-50",
           hasError && "border-destructive ring-2 ring-destructive/20",
-          className ?? "w-full"
+          className
         )}
       >
         <div className="flex-1 min-w-0 overflow-hidden">
